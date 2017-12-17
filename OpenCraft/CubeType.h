@@ -2,7 +2,7 @@
 
 #include <string>
 
-using CubeType = size_t;
+using CubeType = int32_t;
 
 struct CubeType_raw
 {

@@ -1,15 +1,15 @@
 #include <iostream>
 #include <string>
 
-#include "CubeType.h"
-#include "DBManager.h"
+#include "OpenCraft.h"
 
 using namespace std;
 				
 int main(int argc, char **argv) 
 {
 	cout << "Let's go!" << endl;
-	DBManager db{ "test" };
+	OpenCraft game;
+	game.start();
 	cout << "OK, everything seems fine...." << endl;
 	return 0;
 }

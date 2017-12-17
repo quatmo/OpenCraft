@@ -144,20 +144,46 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Block.cpp" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ChunkManager.cpp" />
     <ClCompile Include="DBManager.cpp" />
     <ClCompile Include="ext\sqlite3\sqlite3.c" />
+    <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="OpenCraft.cpp" />
+    <ClCompile Include="PerlinNoise.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="SkyBox.cpp" />
+    <ClCompile Include="stb_image.cpp" />
+    <ClCompile Include="TextureLoader.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Block.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Chunk.h" />
+    <ClInclude Include="ChunkManager.h" />
     <ClInclude Include="Cube.h" />
     <ClInclude Include="CubeType.h" />
     <ClInclude Include="DBManager.h" />
     <ClInclude Include="Direction.h" />
     <ClInclude Include="ext\sqlite3\sqlite3.h" />
+    <ClInclude Include="glad.h" />
+    <ClInclude Include="Item.h" />
+    <ClInclude Include="khrplatform.h" />
+    <ClInclude Include="OpenCraft.h" />
+    <ClInclude Include="PerlinNoise.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="SkyBox.h" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="TextureLoader.h" />
+    <ClInclude Include="TextureManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
