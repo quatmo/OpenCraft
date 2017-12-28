@@ -164,14 +164,14 @@ void OpenCraft::renderSkyBox(void)
 	m_itemMap.at("skybox")->draw(skyboxShader);
 }
 
-
-
 void OpenCraft::renderTestBlock(void)
 {
+	glEnable(GL_FRAMEBUFFER_SRGB);
 	static glm::mat4 models[16 * 16 * 256 * 4];
+	
 	auto blockShader = m_shaderMap.at("cube");
 	glm::mat4 view = m_camera.getViewMatrix();
-	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 1000.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 64.0f);
 	blockShader.use();
 	blockShader.setMat4("view", view);
 	blockShader.setMat4("projection", projection);
@@ -196,36 +196,58 @@ void OpenCraft::renderTestBlock(void)
 
 	int index = 0;
 	int chunkCount = 0;
-	auto chunks = m_chunkManager.getChunks();
-	//auto dx = static_cast<int>(m_camera.m_position[0]/16);
-	//auto dz = static_cast<int>(m_camera.m_position[2]/16);
-	for (auto chunk : chunks)
+	int updated = 0;
+	auto chunks = m_chunkManager.getChunks(&updated);
+	static std::unordered_map<CubeType, std::list<glm::mat4>> cubeModelMatlMap;
+	static std::unordered_map<CubeType, std::pair<int, int>> fastModelMatMap;
+	if (updated == 0) //need to update model matrics
 	{
-		for (int x = 0; x < 16; x++)
+		cubeModelMatlMap.clear();
+		fastModelMatMap.clear();
+		for (auto chunk : chunks)
 		{
-			for (int z = 0; z < 16; z++)
+			for (int x = 0; x < 16; x++)
 			{
-				for (int y = 0; y < 256; y++)
+				for (int z = 0; z < 16; z++)
 				{
-					if (chunk->cubes[x * 256 * 16 + z * 256 + y].type == 1)
+					for (int y = 0; y < 256; y++)
 					{
-						
-						//if (glm::length(glm::vec3(chunk->p * 16 - x, 0, chunk->q * 16)-m_camera.m_position)> 100.0f)
-						//{
-						//	continue;
-						//}
-						glm::mat4 model;
-						model = glm::translate(model, glm::vec3(chunk->p * 16, 0, chunk->q * 16));
-						model = glm::translate(model, glm::vec3(-x, -y + 128, -z));
-						model = glm::scale(model, glm::vec3(0.5f));
-						models[index++] = model;
+						if (chunk->cubes[x * 256 * 16 + z * 256 + y].type != 0) // it's not the air block
+						{
+							glm::mat4 model;
+							model = glm::translate(model, glm::vec3(chunk->p * 16, 0, chunk->q * 16));
+							model = glm::translate(model, glm::vec3(-x, -y + 128, -z));
+							model = glm::scale(model, glm::vec3(0.5f));
+							cubeModelMatlMap[chunk->cubes[x * 256 * 16 + z * 256 + y].type].push_back(model);
+						}
 					}
 				}
 			}
+			chunkCount++;
 		}
-		chunkCount++;
+		int index = 0;
+		for (auto cubeModelMat : cubeModelMatlMap)
+		{
+			auto cubeType = cubeModelMat.first;
+			auto instanceCount = cubeModelMat.second.size();
+			fastModelMatMap[cubeType].first = index;
+			fastModelMatMap[cubeType].second = instanceCount;
+			for (auto model : cubeModelMat.second)
+			{
+				models[index++] = model;
+			}
+			
+		}
 	}
-	m_renderer.renderCubes(1, blockShader, models, index);
+
+	for (auto cubeModelMat : fastModelMatMap)
+	{
+		auto cubeType = cubeModelMat.first;
+		auto start = cubeModelMat.second.first;
+		auto instanceCount = cubeModelMat.second.second;
+		fastModelMatMap[cubeType].second = instanceCount;
+		m_renderer.renderCubes(cubeType, blockShader, models+start, instanceCount);
+	}
 }
 
 void OpenCraft::framebuffer_size_callback(GLFWwindow * window, int width, int height)

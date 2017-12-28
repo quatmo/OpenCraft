@@ -60,7 +60,19 @@ unsigned int loadCubemap(std::vector<std::string> faces)
 		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrComponents, 0);
 		if (data)
 		{
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			GLenum format;
+			switch (nrComponents)
+			{
+			case 1:
+				format = GL_RED; break;
+			case 3:
+				format = GL_RGB; break;
+			case 4:
+				format = GL_RGBA; break;
+			default:
+				break;
+			}
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 			stbi_image_free(data);
 		}
 		else

@@ -24,11 +24,11 @@ void TextureManager::loadCubeTexture(const std::string textureName)
 		"./textures/"
 	};
 	// assemble the path
-	faces[0] += (textureName + "/right.jpg");
-	faces[1] += (textureName + "/left.jpg");
-	faces[2] += (textureName + "/top.jpg");
-	faces[3] += (textureName + "/bottom.jpg");
-	faces[4] += (textureName + "/back.jpg");
-	faces[5] += (textureName + "/front.jpg");
+	faces[0] += (textureName + "/right.png");
+	faces[1] += (textureName + "/left.png");
+	faces[2] += (textureName + "/top.png");
+	faces[3] += (textureName + "/bottom.png");
+	faces[4] += (textureName + "/back.png");
+	faces[5] += (textureName + "/front.png");
 	m_cubeTextureMap[textureName] = loadCubemap(faces);
 }
