@@ -3,6 +3,7 @@
 #include "OpenCraft.h"
 #include "SkyBox.h"
 #include "Block.h"
+#include "Crosshair.h"
 
 
 Camera OpenCraft::m_camera = glm::vec3(-10.0f, 0.0f, -5.0f);
@@ -74,6 +75,7 @@ int OpenCraft::initWindowSettings(void)
 void OpenCraft::initShaders(void)
 {
 	m_shaderMap.emplace("skybox", Shader("./shaders/skybox.vs", "./shaders/skybox.fs"));
+	m_shaderMap.emplace("crosshair", Shader("./shaders/crosshair.vs", "./shaders/crosshair.fs"));
 	m_shaderMap.emplace("cube", Shader("./shaders/cube.vs", "./shaders/cube.fs"));
 }
 
@@ -81,6 +83,7 @@ void OpenCraft::initItems(void)
 {
 	m_itemMap.emplace("skybox", new SkyBox);
 	m_itemMap.emplace("block", new Block);
+	m_itemMap.emplace("crosshair", new Crosshair);
 }
 
 void OpenCraft::startRenderLoop(void)
@@ -99,6 +102,7 @@ void OpenCraft::startRenderLoop(void)
 
 		renderTestBlock();
 		renderSkyBox();
+		renderCrossair();
 
 		// final works
 		glfwSwapBuffers(m_window);
@@ -248,6 +252,20 @@ void OpenCraft::renderTestBlock(void)
 		fastModelMatMap[cubeType].second = instanceCount;
 		m_renderer.renderCubes(cubeType, blockShader, models+start, instanceCount);
 	}
+}
+
+void OpenCraft::renderCrossair(void)
+{
+	auto crosshairShader = m_shaderMap.at("crosshair");
+	glm::mat4 model;
+	model = glm::scale(model, glm::vec3(0.025));
+	glm::mat4 view;
+	glm::mat4 projection;
+	crosshairShader.use();
+	crosshairShader.setMat4("model", model);
+	crosshairShader.setMat4("view", view);
+	crosshairShader.setMat4("projection", projection);
+	m_itemMap.at("crosshair")->draw(crosshairShader);
 }
 
 void OpenCraft::framebuffer_size_callback(GLFWwindow * window, int width, int height)

@@ -106,7 +106,7 @@ float cubeVertices[6 * 6 * 6] = {
 void renderGrass(const Shader shader, const unsigned int VAO, const size_t instanceCount)
 {
 	shader.use();
-
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	glBindVertexArray(VAO);
@@ -133,7 +133,7 @@ void renderGrass(const Shader shader, const unsigned int VAO, const size_t insta
 void renderDirt(const Shader shader, const unsigned int VAO, const size_t instanceCount)
 {
 	shader.use();
-
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	glBindVertexArray(VAO);

@@ -76,6 +76,7 @@ private:
 	// render functions
 	void renderSkyBox(void);
 	void renderTestBlock(void);
+	void renderCrossair(void);
 
 	//call back functions
 	static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
