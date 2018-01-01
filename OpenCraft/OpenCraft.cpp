@@ -6,13 +6,14 @@
 #include "Crosshair.h"
 
 
-Camera OpenCraft::m_camera = glm::vec3(-10.0f, 0.0f, -5.0f);
+Camera OpenCraft::m_camera = glm::vec3(-10.0f, 10.0f, -5.0f);
+ChunkManager OpenCraft::m_chunkManager(glm::vec3(-10.0f, 0.0f, -5.0f));
 bool OpenCraft::m_firstMouse = true;
 float OpenCraft::m_lastX = 0.0;
 float OpenCraft::m_lastY = 0.0;
 
 OpenCraft::OpenCraft(const unsigned int SCR_WIDTH, const unsigned int SCR_HEIGHT)
-	:m_screenWidth(SCR_WIDTH), m_screenHeight(SCR_HEIGHT), m_chunkManager(glm::vec3(-10.0f, 0.0f, -5.0f))
+	:m_screenWidth(SCR_WIDTH), m_screenHeight(SCR_HEIGHT)
 {
 	m_lastX = static_cast<float>(SCR_WIDTH / 2.0);
 	m_lastY = static_cast<float>(SCR_HEIGHT / 2.0);
@@ -56,6 +57,7 @@ int OpenCraft::initWindowSettings(void)
 	glfwSetFramebufferSizeCallback(m_window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(m_window, mouse_callback);
 	glfwSetScrollCallback(m_window, scroll_callback);
+	glfwSetMouseButtonCallback(m_window, mouse_button_callback);
 
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -92,9 +94,10 @@ void OpenCraft::startRenderLoop(void)
 	{
 		// per-frame time logic
 		updateTime();
-		m_chunkManager.updateChunks(m_camera.m_position);
+		m_chunkManager.updateChunks(m_camera.getPosition());
 		// input
 		processInput();
+
 		// clear the window
 		glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -172,7 +175,7 @@ void OpenCraft::renderTestBlock(void)
 {
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	static glm::mat4 models[16 * 16 * 256 * 4];
-	
+
 	auto blockShader = m_shaderMap.at("cube");
 	glm::mat4 view = m_camera.getViewMatrix();
 	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 64.0f);
@@ -180,15 +183,15 @@ void OpenCraft::renderTestBlock(void)
 	blockShader.setMat4("view", view);
 	blockShader.setMat4("projection", projection);
 
-	blockShader.setVec3("viewPos", m_camera.m_position);
+	blockShader.setVec3("viewPos", m_camera.getPosition());
 
 	blockShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
 	blockShader.setVec3("dirLight.ambient", 0.4f, 0.4f, 0.4f);
 	blockShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
 	blockShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
 
-	blockShader.setVec3("spotLight.position", m_camera.m_position);
-	blockShader.setVec3("spotLight.direction", m_camera.m_front);
+	blockShader.setVec3("spotLight.position", m_camera.getPosition());
+	blockShader.setVec3("spotLight.direction", m_camera.getFront());
 	blockShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
 	blockShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
 	blockShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
@@ -220,7 +223,7 @@ void OpenCraft::renderTestBlock(void)
 						{
 							glm::mat4 model;
 							model = glm::translate(model, glm::vec3(chunk->p * 16, 0, chunk->q * 16));
-							model = glm::translate(model, glm::vec3(-x, -y + 128, -z));
+							model = glm::translate(model, glm::vec3(x, y, z));
 							model = glm::scale(model, glm::vec3(0.5f));
 							cubeModelMatlMap[chunk->cubes[x * 256 * 16 + z * 256 + y].type].push_back(model);
 						}
@@ -240,7 +243,7 @@ void OpenCraft::renderTestBlock(void)
 			{
 				models[index++] = model;
 			}
-			
+
 		}
 	}
 
@@ -250,7 +253,7 @@ void OpenCraft::renderTestBlock(void)
 		auto start = cubeModelMat.second.first;
 		auto instanceCount = cubeModelMat.second.second;
 		fastModelMatMap[cubeType].second = instanceCount;
-		m_renderer.renderCubes(cubeType, blockShader, models+start, instanceCount);
+		m_renderer.renderCubes(cubeType, blockShader, models + start, instanceCount);
 	}
 }
 
@@ -258,7 +261,7 @@ void OpenCraft::renderCrossair(void)
 {
 	auto crosshairShader = m_shaderMap.at("crosshair");
 	glm::mat4 model;
-	model = glm::scale(model, glm::vec3(0.025));
+	model = glm::scale(model, glm::vec3(0.025f));
 	glm::mat4 view;
 	glm::mat4 projection;
 	crosshairShader.use();
@@ -291,4 +294,27 @@ void OpenCraft::mouse_callback(GLFWwindow * window, double xpos, double ypos)
 void OpenCraft::scroll_callback(GLFWwindow * window, double xoffset, double yoffset)
 {
 	m_camera.processMouseScroll(static_cast<float>(yoffset));
+}
+
+void OpenCraft::mouse_button_callback(GLFWwindow * window, int button, int action, int mods)
+{
+	if (action == GLFW_PRESS)
+	{
+		switch (button)
+		{
+		case GLFW_MOUSE_BUTTON_LEFT:
+			std::cerr<< "Mosue left button clicked!"<<std::endl;
+			m_chunkManager.tryDestoryCube(m_camera.getPosition(), m_camera.getFront());
+			break;
+		case GLFW_MOUSE_BUTTON_MIDDLE:
+			std::cerr << "Mosue middle button clicked!" << std::endl;
+			break;
+		case GLFW_MOUSE_BUTTON_RIGHT:
+			std::cerr << "Mosue right button clicked!" << std::endl;
+			break;
+		default:
+			break;
+		}
+	}
+	return;
 }

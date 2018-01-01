@@ -26,13 +26,6 @@ constexpr float ZOOM = 45.0f;
 class Camera
 {
 public:
-
-	glm::vec3 m_position;
-	glm::vec3 m_front;
-	glm::vec3 m_up;
-	glm::vec3 m_right;
-	glm::vec3 m_worldUp;
-
 	Camera(const glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
 		const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
 		const float yaw = YAW, const float pitch = PITCH);
@@ -47,6 +40,8 @@ public:
 	void processMouseScroll(float yoffset);
 
 	glm::vec3 getPosition(void)const;
+	glm::vec3 getFront(void)const;
+
 	float getZoom(void)const;
 
 	~Camera() = default;
@@ -57,6 +52,13 @@ private:
 	float m_movementSpeed;
 	float m_mouseSensitivity;
 	float m_zoom;
+
+	glm::vec3 m_position;
+	glm::vec3 m_front;
+	glm::vec3 m_up;
+	glm::vec3 m_right;
+	glm::vec3 m_worldUp;
+
 	void updateCameraVectors();
 };
 

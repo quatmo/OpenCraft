@@ -43,7 +43,7 @@ private:
 	//render
 	Renderer m_renderer;
 
-	ChunkManager m_chunkManager;
+	
 	
 	// timing
 	float m_deltaTime = 0.0f;
@@ -55,6 +55,7 @@ private:
 	// camera
 	static Camera m_camera;
 	static bool m_firstMouse;
+	static ChunkManager m_chunkManager;
 
 	// basic facility collections
 	std::unordered_map<std::string, Shader> m_shaderMap;
@@ -82,5 +83,6 @@ private:
 	static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 	static void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 	static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+	static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 };
 

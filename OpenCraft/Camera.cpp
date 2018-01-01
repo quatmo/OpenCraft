@@ -100,6 +100,11 @@ glm::vec3 Camera::getPosition(void) const
 	return m_position;
 }
 
+glm::vec3 Camera::getFront(void) const
+{
+	return m_front;
+}
+
 float Camera::getZoom(void) const
 {
 	return m_zoom;

@@ -21,6 +21,8 @@ public:
 	std::array<std::shared_ptr<Chunk>, 9*9> getChunks(int *);
 
 	void updateChunks(const glm::vec3 cameraPos);
+	void tryDestoryCube(const glm::vec3 cameraPos, const glm::vec3 frontVec3);
+
 
 	ChunkManager& operator=(const ChunkManager&) = delete;
 	ChunkManager(const ChunkManager&) = delete;
@@ -30,6 +32,7 @@ public:
 private:
 	DBManager m_db;
 	int32_t m_p, m_q;
+	bool m_modified;
 	std::unordered_map<int32_t,std::unordered_map<int32_t,std::shared_ptr<Chunk>>> m_chunkMap;
 	std::set<std::pair<int, int>> m_chunkSet;
 	std::shared_ptr<Chunk> loadBasicChunk(const int32_t p, const int32_t q);

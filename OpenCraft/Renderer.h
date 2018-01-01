@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <string>
+
 #include "CubeType.h"
 #include "Shader.h"
 
@@ -21,6 +23,8 @@ public:
 	~Renderer();
 	friend void renderGrass(const Shader shader, const unsigned int VAO, const size_t instanceCount);
 	friend void renderDirt(const Shader shader, const unsigned int VAO, const size_t instanceCount);
+	friend void renderRedStoneBlock(const Shader shader, const unsigned int VAO, const size_t instanceCount);
+	friend void renderBasicBlock(const Shader shader, const unsigned int VAO, const size_t instanceCount,const std::string name);
 private:
 };
 

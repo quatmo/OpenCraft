@@ -16,7 +16,8 @@ unordered_map < CubeType,
 renderDispatcher =
 {
 	{1,renderGrass},
-	{2,renderDirt}
+	{2,renderDirt},
+	{3,renderRedStoneBlock}
 };
 
 
@@ -103,7 +104,7 @@ float cubeVertices[6 * 6 * 6] = {
 	-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f
 };
 
-void renderGrass(const Shader shader, const unsigned int VAO, const size_t instanceCount)
+void renderBasicBlock(const Shader shader, const unsigned int VAO, const size_t instanceCount, const std::string name)
 {
 	shader.use();
 	glEnable(GL_DEPTH_TEST);
@@ -121,38 +122,28 @@ void renderGrass(const Shader shader, const unsigned int VAO, const size_t insta
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture("grass"));
+	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture(name));
 	glDrawArraysInstanced(GL_TRIANGLES, 0, 36, instanceCount);
 	glDisable(GL_CULL_FACE);
 	glBindVertexArray(0);
 	// never forget to release the resource
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
+}
+
+
+void renderGrass(const Shader shader, const unsigned int VAO, const size_t instanceCount)
+{
+	renderBasicBlock(shader, VAO, instanceCount, "grass");
 }
 
 void renderDirt(const Shader shader, const unsigned int VAO, const size_t instanceCount)
 {
-	shader.use();
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
-	glBindVertexArray(VAO);
-	unsigned int VBO;
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture("dirt"));
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 36, instanceCount);
-	glDisable(GL_CULL_FACE);
-	glBindVertexArray(0);
-	// never forget to release the resource
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
+	renderBasicBlock(shader, VAO, instanceCount, "dirt");
 }
+
+void renderRedStoneBlock(const Shader shader, const unsigned int VAO, const size_t instanceCount)
+{
+	renderBasicBlock(shader, VAO, instanceCount, "red_stone_block");
+}
+
