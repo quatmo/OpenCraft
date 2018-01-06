@@ -29,7 +29,6 @@ Block::Block()
 
 void Block::draw(Shader shader)
 {
-	//std::cout << "666" << std::endl;
 	shader.use();
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);

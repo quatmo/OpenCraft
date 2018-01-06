@@ -43,8 +43,6 @@ private:
 	//render
 	Renderer m_renderer;
 
-	
-	
 	// timing
 	float m_deltaTime = 0.0f;
 	float m_lastFrame = 0.0f;
@@ -56,7 +54,7 @@ private:
 	static Camera m_camera;
 	static bool m_firstMouse;
 	static ChunkManager m_chunkManager;
-
+	static CubeType m_blockOnHand;
 	// basic facility collections
 	std::unordered_map<std::string, Shader> m_shaderMap;
 	std::unordered_map<std::string, std::unique_ptr<Item>> m_itemMap;
@@ -78,6 +76,7 @@ private:
 	void renderSkyBox(void);
 	void renderTestBlock(void);
 	void renderCrossair(void);
+	void renderHand(void);
 
 	//call back functions
 	static void framebuffer_size_callback(GLFWwindow* window, int width, int height);

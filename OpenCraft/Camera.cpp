@@ -34,25 +34,38 @@ glm::mat4 Camera::getViewMatrix() const
 	return glm::lookAt(m_position, m_position + m_front, m_up);
 }
 
-void Camera::processKeyboard(const CameraMovement direction, const float deltaTime)
+void Camera::processKeyboard(const CameraMovement direction, const float deltaTime, ChunkManager& chunkManager)
 {
 	float velocity = m_movementSpeed * deltaTime;
+	const float detectFactor = 3.0f;
+	glm::vec3 newPos;
+	glm::vec3 detectPos;
 	switch (direction)
 	{
 	case CameraMovement::FORWARD:
-		m_position += m_front * velocity; break;
+		newPos = m_position + m_front * velocity;
+		detectPos = m_position + m_front * velocity*detectFactor; break;
 	case CameraMovement::BACKWARD:
-		m_position -= m_front * velocity; break;
+		newPos = m_position - m_front * velocity;
+		detectPos = m_position - m_front * velocity*detectFactor; break;
 	case CameraMovement::LEFT:
-		m_position -= m_right * velocity; break;
+		newPos = m_position - m_right * velocity;
+		detectPos = m_position - m_right * velocity*detectFactor; break;
 	case CameraMovement::RIGHT:
-		m_position += m_right * velocity; break;
+		newPos = m_position + m_right * velocity;
+		detectPos = m_position + m_right * velocity*detectFactor; break;
 	case CameraMovement::UP:
-		m_position += m_up * velocity; break;
+		newPos = m_position + m_up * velocity;
+		detectPos = m_position + m_up * velocity*detectFactor; break;
 	case CameraMovement::DOWN:
-		m_position -= m_up * velocity; break;
+		newPos = m_position - m_up * velocity;
+		detectPos = m_position - m_up * velocity*detectFactor; break;
 	default:
-		break;
+		return;
+	}
+	if (chunkManager.hitDetection(detectPos) == false)
+	{
+		m_position = newPos;
 	}
 }
 

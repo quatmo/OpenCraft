@@ -10,14 +10,20 @@
 
 using namespace std;
 
+
+// 1~1024 for typical blocks
+
 unordered_map < CubeType,
-	function<void(const Shader, const unsigned int, const size_t)>
+	function<void(const Shader, const unsigned int, const int,const int)>
 >
 renderDispatcher =
 {
 	{1,renderGrass},
 	{2,renderDirt},
-	{3,renderRedStoneBlock}
+	{3,renderRedStoneBlock},
+	{4,renderOak},
+	{5,renderLeaf},
+	{1026,renderFlower}
 };
 
 
@@ -27,7 +33,7 @@ Renderer::Renderer()
 
 
 
-void Renderer::renderCubes(CubeType cubeType, const Shader shader, glm::mat4* models, const size_t instanceCount)
+void Renderer::renderCubes(CubeType cubeType, const Shader shader, glm::mat4* models, const int instanceCount)
 {
 	unsigned int VAO;
 	glGenVertexArrays(1, &VAO);
@@ -48,7 +54,14 @@ void Renderer::renderCubes(CubeType cubeType, const Shader shader, glm::mat4* mo
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
-	renderDispatcher[cubeType](shader, VAO, instanceCount); // render it
+	if (cubeType / 1000000 == 0)
+	{
+		renderDispatcher[cubeType](shader, VAO, instanceCount, cubeType/1000000); // render it
+	}
+	else
+	{
+		renderDispatcher[cubeType%1000000](shader, VAO, instanceCount, cubeType / 1000000); // render it
+	}
 
 	// never forget to release the resource
 	glDeleteBuffers(1, &instanceVBO);
@@ -104,10 +117,9 @@ float cubeVertices[6 * 6 * 6] = {
 	-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f
 };
 
-void renderBasicBlock(const Shader shader, const unsigned int VAO, const size_t instanceCount, const std::string name)
+void renderBasicBlock(const Shader shader, const unsigned int VAO, const int instanceCount, const std::string name, const int durability)
 {
 	shader.use();
-	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	glBindVertexArray(VAO);
@@ -121,9 +133,24 @@ void renderBasicBlock(const Shader shader, const unsigned int VAO, const size_t 
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
+	shader.setInt("texture", 0);
+	shader.setInt("durabilityTexture", 1);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture(name));
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 36, instanceCount);
+
+	if (durability == 0)
+	{
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture("destroy_stage_0"));
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, instanceCount);
+	}
+	else
+	{
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture("destroy_stage_"+std::to_string(durability)));
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, instanceCount);
+	}
+	
 	glDisable(GL_CULL_FACE);
 	glBindVertexArray(0);
 	// never forget to release the resource
@@ -132,18 +159,73 @@ void renderBasicBlock(const Shader shader, const unsigned int VAO, const size_t 
 }
 
 
-void renderGrass(const Shader shader, const unsigned int VAO, const size_t instanceCount)
+void renderGrass(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
 {
-	renderBasicBlock(shader, VAO, instanceCount, "grass");
+	renderBasicBlock(shader, VAO, instanceCount, "grass", durability);
 }
 
-void renderDirt(const Shader shader, const unsigned int VAO, const size_t instanceCount)
+void renderDirt(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
 {
-	renderBasicBlock(shader, VAO, instanceCount, "dirt");
+	renderBasicBlock(shader, VAO, instanceCount, "dirt",durability);
 }
 
-void renderRedStoneBlock(const Shader shader, const unsigned int VAO, const size_t instanceCount)
+void renderRedStoneBlock(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
 {
-	renderBasicBlock(shader, VAO, instanceCount, "red_stone_block");
+	renderBasicBlock(shader, VAO, instanceCount, "red_stone_block", durability);
 }
+
+void renderOak(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	renderBasicBlock(shader, VAO, instanceCount, "oak", durability);
+}
+
+void renderLeaf(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	renderBasicBlock(shader, VAO, instanceCount, "leaf", durability);
+}
+
+
+float flowerVertices[6*8] = {
+	// positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+	0.0f, -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,   1.0f,  1.0f,
+	0.0f, -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,   0.0f,  1.0f,
+	0.0f, 1.0f,  -1.0f,  0.0f,  1.0f,   1.0f,  0.0f,   0.0f,
+
+	0.0f,-1.0f,  1.0f,  0.0f,  0.0f,  0.0f,   1.0f,  1.0f,
+	0.0f, 1.0f, -1.0f,  0.0f,  1.0f,  1.0f,   0.0f,  0.0f,
+	0.0f, 1.0f,  1.0f,  0.0f,  1.0f,  0.0f,   1.0f,  0.0f
+};
+
+void renderFlower(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	//std::cerr << "render flower" << std::endl;
+	shader.use();
+	//glEnable(GL_DEPTH_TEST);
+	glBindVertexArray(VAO);
+	unsigned int VBO;
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(flowerVertices), &flowerVertices, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(1 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(4 * sizeof(float)));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureManager::getFaceTexture("flower"));
+	glDrawArraysInstanced(GL_TRIANGLES, 0,6, instanceCount);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, instanceCount);
+
+	glBindVertexArray(0);
+	// never forget to release the resource
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+}
+
 

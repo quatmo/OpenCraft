@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "ChunkManager.h"
+
 #include "glad.h"
 #include "ext/glm/glm.hpp"
 #include "ext/glm/gtc/matrix_transform.hpp"
@@ -19,7 +21,7 @@ enum class CameraMovement
 // Default camera values
 constexpr float YAW = 0.0f;
 constexpr float PITCH = 0.0f;
-constexpr float SPEED = 10.f;
+constexpr float SPEED = 5.0f;
 constexpr float SENSITIVTY = 0.1f;
 constexpr float ZOOM = 45.0f;
 
@@ -34,7 +36,7 @@ public:
 		const float yaw, const float pitch);
 
 	glm::mat4 getViewMatrix()const;
-	void processKeyboard(const CameraMovement direction, const float deltaTime);
+	void processKeyboard(const CameraMovement direction, const float deltaTime,ChunkManager& chunkManager);
 	void processMouseMovement(const float xOffset, const float yOffset,
 		const GLboolean constrainPitch = true);
 	void processMouseScroll(float yoffset);

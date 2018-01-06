@@ -14,6 +14,7 @@ void Crosshair::draw(Shader shader)
 	glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(m_VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 12);
+	glEnable(GL_DEPTH_TEST);
 	glBindVertexArray(0);
 }
 

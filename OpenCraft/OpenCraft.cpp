@@ -6,11 +6,13 @@
 #include "Crosshair.h"
 
 
-Camera OpenCraft::m_camera = glm::vec3(-10.0f, 10.0f, -5.0f);
+Camera OpenCraft::m_camera = glm::vec3(-0.0f, 2.0f, -0.0f);
 ChunkManager OpenCraft::m_chunkManager(glm::vec3(-10.0f, 0.0f, -5.0f));
 bool OpenCraft::m_firstMouse = true;
 float OpenCraft::m_lastX = 0.0;
 float OpenCraft::m_lastY = 0.0;
+CubeType OpenCraft::m_blockOnHand = 2;
+
 
 OpenCraft::OpenCraft(const unsigned int SCR_WIDTH, const unsigned int SCR_HEIGHT)
 	:m_screenWidth(SCR_WIDTH), m_screenHeight(SCR_HEIGHT)
@@ -79,6 +81,7 @@ void OpenCraft::initShaders(void)
 	m_shaderMap.emplace("skybox", Shader("./shaders/skybox.vs", "./shaders/skybox.fs"));
 	m_shaderMap.emplace("crosshair", Shader("./shaders/crosshair.vs", "./shaders/crosshair.fs"));
 	m_shaderMap.emplace("cube", Shader("./shaders/cube.vs", "./shaders/cube.fs"));
+	m_shaderMap.emplace("flower", Shader("./shaders/flower.vs", "./shaders/flower.fs"));
 }
 
 void OpenCraft::initItems(void)
@@ -106,6 +109,7 @@ void OpenCraft::startRenderLoop(void)
 		renderTestBlock();
 		renderSkyBox();
 		renderCrossair();
+		renderHand();
 
 		// final works
 		glfwSwapBuffers(m_window);
@@ -119,29 +123,49 @@ void OpenCraft::processInput(void)
 	{
 		glfwSetWindowShouldClose(m_window, true);
 	}
+	if (glfwGetKey(m_window, GLFW_KEY_1) == GLFW_PRESS)
+	{
+		m_blockOnHand = 1;
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_2) == GLFW_PRESS)
+	{
+		m_blockOnHand = 2;
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_3) == GLFW_PRESS)
+	{
+		m_blockOnHand = 3;
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_4) == GLFW_PRESS)
+	{
+		m_blockOnHand = 4;
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_5) == GLFW_PRESS)
+	{
+		m_blockOnHand = 1026;
+	}
 	if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		m_camera.processKeyboard(CameraMovement::FORWARD, m_deltaTime);
+		m_camera.processKeyboard(CameraMovement::FORWARD, m_deltaTime,m_chunkManager);
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
 	{
-		m_camera.processKeyboard(CameraMovement::BACKWARD, m_deltaTime);
+		m_camera.processKeyboard(CameraMovement::BACKWARD, m_deltaTime, m_chunkManager);
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
 	{
-		m_camera.processKeyboard(CameraMovement::LEFT, m_deltaTime);
+		m_camera.processKeyboard(CameraMovement::LEFT, m_deltaTime, m_chunkManager);
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
 	{
-		m_camera.processKeyboard(CameraMovement::RIGHT, m_deltaTime);
+		m_camera.processKeyboard(CameraMovement::RIGHT, m_deltaTime, m_chunkManager);
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 	{
-		m_camera.processKeyboard(CameraMovement::UP, m_deltaTime);
+		m_camera.processKeyboard(CameraMovement::UP, m_deltaTime, m_chunkManager);
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
 	{
-		m_camera.processKeyboard(CameraMovement::DOWN, m_deltaTime);
+		m_camera.processKeyboard(CameraMovement::DOWN, m_deltaTime, m_chunkManager);
 	}
 }
 
@@ -176,19 +200,24 @@ void OpenCraft::renderTestBlock(void)
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	static glm::mat4 models[16 * 16 * 256 * 4];
 
+	auto flowerShader = m_shaderMap.at("flower");
 	auto blockShader = m_shaderMap.at("cube");
 	glm::mat4 view = m_camera.getViewMatrix();
-	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 64.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 20.0f);
+	
+	flowerShader.use();
+	flowerShader.setMat4("view", view);
+	flowerShader.setMat4("projection", projection);
+	
 	blockShader.use();
 	blockShader.setMat4("view", view);
 	blockShader.setMat4("projection", projection);
-
 	blockShader.setVec3("viewPos", m_camera.getPosition());
-
+	//blockShader.setVec3("dirLight.direction", 0.0f, 1.0f, -1.0f);
 	blockShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-	blockShader.setVec3("dirLight.ambient", 0.4f, 0.4f, 0.4f);
+	blockShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
 	blockShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-	blockShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+	blockShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
 
 	blockShader.setVec3("spotLight.position", m_camera.getPosition());
 	blockShader.setVec3("spotLight.direction", m_camera.getFront());
@@ -221,11 +250,25 @@ void OpenCraft::renderTestBlock(void)
 					{
 						if (chunk->cubes[x * 256 * 16 + z * 256 + y].type != 0) // it's not the air block
 						{
+							if (m_chunkManager.testSurrounding(chunk->p, chunk->q, x, y, z) == true)
+							{
+								continue;
+							}
+							
 							glm::mat4 model;
-							model = glm::translate(model, glm::vec3(chunk->p * 16, 0, chunk->q * 16));
-							model = glm::translate(model, glm::vec3(x, y, z));
-							model = glm::scale(model, glm::vec3(0.5f));
-							cubeModelMatlMap[chunk->cubes[x * 256 * 16 + z * 256 + y].type].push_back(model);
+							model = glm::translate(model, glm::vec3(chunk->p * 4, 0, chunk->q * 4));
+							model = glm::translate(model, glm::vec3(x*0.25, y*0.25, z*0.25));
+							model = glm::translate(model, glm::vec3(0.125, 0.125,0.125));
+							model = glm::scale(model, glm::vec3(0.125f));
+							if (chunk->cubes[x * 256 * 16 + z * 256 + y].durability != 0)
+							{
+								auto durability = chunk->cubes[x * 256 * 16 + z * 256 + y].durability;
+								cubeModelMatlMap[chunk->cubes[x * 256 * 16 + z * 256 + y].type+1000000*durability].push_back(model);
+							}
+							else
+							{
+								cubeModelMatlMap[chunk->cubes[x * 256 * 16 + z * 256 + y].type].push_back(model);
+							}
 						}
 					}
 				}
@@ -243,7 +286,6 @@ void OpenCraft::renderTestBlock(void)
 			{
 				models[index++] = model;
 			}
-
 		}
 	}
 
@@ -253,7 +295,14 @@ void OpenCraft::renderTestBlock(void)
 		auto start = cubeModelMat.second.first;
 		auto instanceCount = cubeModelMat.second.second;
 		fastModelMatMap[cubeType].second = instanceCount;
-		m_renderer.renderCubes(cubeType, blockShader, models + start, instanceCount);
+		if ((cubeType%1000000) < 1024)
+		{
+			m_renderer.renderCubes(cubeType, blockShader, models + start, instanceCount);
+		}
+		else
+		{
+			m_renderer.renderCubes(cubeType, flowerShader, models + start, instanceCount);
+		}
 	}
 }
 
@@ -269,6 +318,43 @@ void OpenCraft::renderCrossair(void)
 	crosshairShader.setMat4("view", view);
 	crosshairShader.setMat4("projection", projection);
 	m_itemMap.at("crosshair")->draw(crosshairShader);
+}
+
+void OpenCraft::renderHand(void)
+{
+	glDisable(GL_DEPTH_TEST);
+	auto blockShader = m_shaderMap.at("cube");
+	glm::mat4 view;
+	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 20.0f);
+	blockShader.use();
+	blockShader.setMat4("view", view);
+	blockShader.setMat4("projection", projection);
+	blockShader.setVec3("viewPos", m_camera.getPosition());
+	//blockShader.setVec3("dirLight.direction", 0.0f, 1.0f, -1.0f);
+	blockShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+	blockShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
+	blockShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+	blockShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
+
+	blockShader.setVec3("spotLight.position", m_camera.getPosition());
+	blockShader.setVec3("spotLight.direction", m_camera.getFront());
+	blockShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+	blockShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+	blockShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	blockShader.setFloat("spotLight.constant", 1.0f);
+	blockShader.setFloat("spotLight.linear", 0.09f);
+	blockShader.setFloat("spotLight.quadratic", 0.032f);
+	blockShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+	blockShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
+	glm::mat4 model;
+
+	model = glm::translate(model,glm::vec3(0.2f,-0.2f,-0.5f));
+	model = glm::rotate(model, 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::scale(model,glm::vec3(0.1f));
+
+	m_renderer.renderCubes(m_blockOnHand, blockShader, &model, 1);
+	glEnable(GL_DEPTH_TEST);
 }
 
 void OpenCraft::framebuffer_size_callback(GLFWwindow * window, int width, int height)
@@ -303,14 +389,12 @@ void OpenCraft::mouse_button_callback(GLFWwindow * window, int button, int actio
 		switch (button)
 		{
 		case GLFW_MOUSE_BUTTON_LEFT:
-			std::cerr<< "Mosue left button clicked!"<<std::endl;
 			m_chunkManager.tryDestoryCube(m_camera.getPosition(), m_camera.getFront());
 			break;
 		case GLFW_MOUSE_BUTTON_MIDDLE:
-			std::cerr << "Mosue middle button clicked!" << std::endl;
 			break;
 		case GLFW_MOUSE_BUTTON_RIGHT:
-			std::cerr << "Mosue right button clicked!" << std::endl;
+			m_chunkManager.tryPlaceCube(m_camera.getPosition(), m_camera.getFront(),m_blockOnHand);
 			break;
 		default:
 			break;

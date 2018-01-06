@@ -18,10 +18,13 @@ class ChunkManager
 public:
 	ChunkManager(const glm::vec3 cameraPos);
 
-	std::array<std::shared_ptr<Chunk>, 9*9> getChunks(int *);
+	std::array<std::shared_ptr<Chunk>, 11*11> getChunks(int *);
 
+	bool testSurrounding(const int p, const int q, const int x, const int y, const int z);
+	bool hitDetection(const glm::vec3 pos);
 	void updateChunks(const glm::vec3 cameraPos);
 	void tryDestoryCube(const glm::vec3 cameraPos, const glm::vec3 frontVec3);
+	void tryPlaceCube(const glm::vec3 cameraPos, const glm::vec3 frontVec3,const CubeType cubeType);
 
 
 	ChunkManager& operator=(const ChunkManager&) = delete;
@@ -36,5 +39,7 @@ private:
 	std::unordered_map<int32_t,std::unordered_map<int32_t,std::shared_ptr<Chunk>>> m_chunkMap;
 	std::set<std::pair<int, int>> m_chunkSet;
 	std::shared_ptr<Chunk> loadBasicChunk(const int32_t p, const int32_t q);
+	std::tuple<int, int, int, int, int> calRealPos(const glm::vec3 worldPos)const;
+	glm::vec3 calWorldPos(const int p, const int q,const int x,const int y,const int z)const;
 };
 
