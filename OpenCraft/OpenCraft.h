@@ -47,6 +47,7 @@ private:
 	float m_deltaTime = 0.0f;
 	float m_lastFrame = 0.0f;
 
+
 	// last position for mouse cursor
 	static float m_lastX;
 	static float m_lastY;
@@ -55,6 +56,7 @@ private:
 	static bool m_firstMouse;
 	static ChunkManager m_chunkManager;
 	static CubeType m_blockOnHand;
+	static int m_handMoveStage;
 	// basic facility collections
 	std::unordered_map<std::string, Shader> m_shaderMap;
 	std::unordered_map<std::string, std::unique_ptr<Item>> m_itemMap;

@@ -6,12 +6,13 @@
 #include "Crosshair.h"
 
 
-Camera OpenCraft::m_camera = glm::vec3(-0.0f, 2.0f, -0.0f);
+Camera OpenCraft::m_camera = glm::vec3(-0.0f, 0.625f, -0.0f);
 ChunkManager OpenCraft::m_chunkManager(glm::vec3(-10.0f, 0.0f, -5.0f));
 bool OpenCraft::m_firstMouse = true;
 float OpenCraft::m_lastX = 0.0;
 float OpenCraft::m_lastY = 0.0;
 CubeType OpenCraft::m_blockOnHand = 2;
+int OpenCraft::m_handMoveStage = 0;
 
 
 OpenCraft::OpenCraft(const unsigned int SCR_WIDTH, const unsigned int SCR_HEIGHT)
@@ -97,7 +98,9 @@ void OpenCraft::startRenderLoop(void)
 	{
 		// per-frame time logic
 		updateTime();
+		m_camera.step(m_deltaTime,m_chunkManager);
 		m_chunkManager.updateChunks(m_camera.getPosition());
+
 		// input
 		processInput();
 
@@ -125,23 +128,32 @@ void OpenCraft::processInput(void)
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_1) == GLFW_PRESS)
 	{
+		m_handMoveStage = 16;
 		m_blockOnHand = 1;
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_2) == GLFW_PRESS)
 	{
+		m_handMoveStage = 16;
 		m_blockOnHand = 2;
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_3) == GLFW_PRESS)
 	{
+		m_handMoveStage = 16;
 		m_blockOnHand = 3;
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_4) == GLFW_PRESS)
 	{
+		m_handMoveStage = 16;
 		m_blockOnHand = 4;
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_5) == GLFW_PRESS)
 	{
+		m_handMoveStage = 16;
 		m_blockOnHand = 1026;
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		m_camera.jump();
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
 	{
@@ -327,6 +339,13 @@ void OpenCraft::renderHand(void)
 	glm::mat4 view;
 	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 20.0f);
 	blockShader.use();
+	
+	if (m_handMoveStage != 0)
+	{
+		m_handMoveStage -= 1;
+		view = glm::rotate(view, (0.2f/16)*m_handMoveStage, glm::vec3(-1.0f, 1.5f, 1.0f));
+	}
+
 	blockShader.setMat4("view", view);
 	blockShader.setMat4("projection", projection);
 	blockShader.setVec3("viewPos", m_camera.getPosition());
@@ -389,6 +408,7 @@ void OpenCraft::mouse_button_callback(GLFWwindow * window, int button, int actio
 		switch (button)
 		{
 		case GLFW_MOUSE_BUTTON_LEFT:
+			m_handMoveStage = 16;
 			m_chunkManager.tryDestoryCube(m_camera.getPosition(), m_camera.getFront());
 			break;
 		case GLFW_MOUSE_BUTTON_MIDDLE:

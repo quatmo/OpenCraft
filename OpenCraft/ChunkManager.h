@@ -18,8 +18,9 @@ class ChunkManager
 public:
 	ChunkManager(const glm::vec3 cameraPos);
 
-	std::array<std::shared_ptr<Chunk>, 11*11> getChunks(int *);
+	std::array<std::shared_ptr<Chunk>, 5*5> getChunks(int *);
 
+	float calFloorDistance(const glm::vec3 pos);
 	bool testSurrounding(const int p, const int q, const int x, const int y, const int z);
 	bool hitDetection(const glm::vec3 pos);
 	void updateChunks(const glm::vec3 cameraPos);

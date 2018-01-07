@@ -23,11 +23,11 @@ ChunkManager::ChunkManager(const glm::vec3 cameraPos)
 	}
 }
 
-std::array<std::shared_ptr<Chunk>, 11 * 11> ChunkManager::getChunks(int* updated)
+std::array<std::shared_ptr<Chunk>, 5 * 5> ChunkManager::getChunks(int* updated)
 {
 	static int pre_m = std::numeric_limits<int>::max();
 	static int pre_n = std::numeric_limits<int>::max();
-	static std::array<std::shared_ptr<Chunk>, 11 * 11> res;
+	static std::array<std::shared_ptr<Chunk>, 5 * 5> res;
 	if (pre_m == m_p && pre_n == m_q && m_modified == false) // no need to change the chunk
 	{
 		*updated = -1;
@@ -37,12 +37,35 @@ std::array<std::shared_ptr<Chunk>, 11 * 11> ChunkManager::getChunks(int* updated
 	pre_m = m_p;
 	pre_n = m_q;
 	int index = 0;
-	for (int dp = -5; dp <= 5; dp++)
+	for (int dp = -2; dp <= 2; dp++)
 	{
-		for (int dq = -5; dq <= 5; dq++) // for each chunk
+		for (int dq = -2; dq <= 2; dq++) // for each chunk
 		{
 			res[index++] = m_chunkMap[m_p + dp][m_q + dq];
 		}
+	}
+	return res;
+}
+
+float ChunkManager::calFloorDistance(const glm::vec3 pos)
+{
+	auto realPos = calRealPos(pos);
+	auto chunkP = std::get<0>(realPos);
+	auto chunkQ = std::get<1>(realPos);
+	auto cubeX = std::get<2>(realPos);
+	auto cubeY = std::get<3>(realPos);
+	auto cubeZ = std::get<4>(realPos);
+
+	float res = pos.y - cubeY*0.25f;
+	while (true)
+	{
+		cubeY -= 1;
+		auto type = m_chunkMap[chunkP][chunkQ]->cubes[cubeX * 16 * 256 + cubeZ * 256 + cubeY].type;
+		if (type!= 0 && type < 1024)
+		{
+			break;
+		}
+		res += 0.25f;
 	}
 	return res;
 }
@@ -69,7 +92,8 @@ bool ChunkManager::testSurrounding(const int p, const int q, const int x, const 
 		auto probeX = std::get<2>(realPosToProbe);
 		auto probeY = std::get<3>(realPosToProbe);
 		auto probeZ = std::get<4>(realPosToProbe);
-		if (chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].type == 0) // it's an air block
+		auto type = chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].type;
+		if (type == 0 || type > 1024) // it's an transparent block
 		{
 			return false;
 		}
@@ -87,7 +111,7 @@ bool ChunkManager::hitDetection(const glm::vec3 pos)
 	auto cubeZ = std::get<4>(realPos);
 
 	auto hitType = m_chunkMap[chunkP][chunkQ]->cubes[cubeX * 16 * 256 + cubeZ * 256 + cubeY].type;
-	if (hitType == 0)
+	if (hitType == 0 || hitType > 1024)
 	{
 		return false;
 	}
@@ -137,10 +161,11 @@ void ChunkManager::tryDestoryCube(const glm::vec3 cameraPos, const glm::vec3 fro
 		auto probeX = std::get<2>(realPosToProbe);
 		auto probeY = std::get<3>(realPosToProbe);
 		auto probeZ = std::get<4>(realPosToProbe);
-		if (chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].type != 0) // it's a none-air block
+		auto type = chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].type;
+		if (type != 0) // it's a none-air block
 		{
 			auto durability = chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].durability;
-			if (durability == 10)
+			if (durability == 10 || type > 1024)
 			{
 				chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].type = 0;
 				chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].durability = 0;

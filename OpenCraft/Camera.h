@@ -24,6 +24,8 @@ constexpr float PITCH = 0.0f;
 constexpr float SPEED = 5.0f;
 constexpr float SENSITIVTY = 0.1f;
 constexpr float ZOOM = 45.0f;
+constexpr float ACCERATION = 0.1f;
+constexpr float JUMP_INIT_SPEED = -0.03125f;
 
 class Camera
 {
@@ -36,6 +38,9 @@ public:
 		const float yaw, const float pitch);
 
 	glm::mat4 getViewMatrix()const;
+
+	void jump();
+	void step(const float deltaTime, ChunkManager& chunkManager);
 	void processKeyboard(const CameraMovement direction, const float deltaTime,ChunkManager& chunkManager);
 	void processMouseMovement(const float xOffset, const float yOffset,
 		const GLboolean constrainPitch = true);
@@ -61,6 +66,12 @@ private:
 	glm::vec3 m_right;
 	glm::vec3 m_worldUp;
 
+	bool m_roamMode;
+	float m_ySpeed;
+
+
 	void updateCameraVectors();
+	void processKeyBoardRoam(const CameraMovement direction, const float deltaTime, ChunkManager& chunkManager);
+	void processKeyBoardNative(const CameraMovement direction, const float deltaTime, ChunkManager& chunkManager);
 };
 
