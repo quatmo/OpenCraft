@@ -19,6 +19,8 @@
 
 constexpr unsigned int DEFAULT_SCR_WIDTH = 800;
 constexpr unsigned int DEFAULT_SCR_HEIGHT = 600;
+constexpr unsigned int SHADOW_MAP_WIDTH = 1024;
+constexpr unsigned int SHADOW_MAP_HEIGHT = 1024;
 
 class OpenCraft
 {
@@ -36,6 +38,8 @@ public:
 private:
 	const unsigned int m_screenWidth;
 	const unsigned int m_screenHeight;
+	unsigned int depthMapFBO;
+	unsigned int depthMap;
 
 	//C-style ptr
 	GLFWwindow* m_window = NULL;

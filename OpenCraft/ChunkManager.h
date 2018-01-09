@@ -18,8 +18,10 @@ class ChunkManager
 public:
 	ChunkManager(const glm::vec3 cameraPos);
 
-	std::array<std::shared_ptr<Chunk>, 5*5> getChunks(int *);
+	std::array<std::shared_ptr<Chunk>,5*5> getChunks(int *);
 
+	std::tuple<int, int, int, int, int> calRealPos(const glm::vec3 worldPos)const;
+	glm::vec3 calWorldPos(const int p, const int q, const int x, const int y, const int z)const;
 	float calFloorDistance(const glm::vec3 pos);
 	bool testSurrounding(const int p, const int q, const int x, const int y, const int z);
 	bool hitDetection(const glm::vec3 pos);
@@ -40,7 +42,7 @@ private:
 	std::unordered_map<int32_t,std::unordered_map<int32_t,std::shared_ptr<Chunk>>> m_chunkMap;
 	std::set<std::pair<int, int>> m_chunkSet;
 	std::shared_ptr<Chunk> loadBasicChunk(const int32_t p, const int32_t q);
-	std::tuple<int, int, int, int, int> calRealPos(const glm::vec3 worldPos)const;
-	glm::vec3 calWorldPos(const int p, const int q,const int x,const int y,const int z)const;
+
+
 };
 

@@ -12,6 +12,7 @@ using namespace std;
 
 
 // 1~1024 for typical blocks
+// 1025~999999 for transparent blocks
 
 unordered_map < CubeType,
 	function<void(const Shader, const unsigned int, const int,const int)>

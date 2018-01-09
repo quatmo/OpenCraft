@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include "OpenCraft.h"
+#include "TextureManager.h"
 #include "SkyBox.h"
 #include "Block.h"
 #include "Crosshair.h"
@@ -20,12 +21,29 @@ OpenCraft::OpenCraft(const unsigned int SCR_WIDTH, const unsigned int SCR_HEIGHT
 {
 	m_lastX = static_cast<float>(SCR_WIDTH / 2.0);
 	m_lastY = static_cast<float>(SCR_HEIGHT / 2.0);
+
 }
 
 void OpenCraft::start(void)
 {
 	auto ret = initWindowSettings();
 	assert(ret == 0);
+
+	glGenFramebuffers(1, &depthMapFBO);
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+		SHADOW_MAP_WIDTH, SHADOW_MAP_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// do the basic initializations
 	initShaders();
@@ -83,6 +101,9 @@ void OpenCraft::initShaders(void)
 	m_shaderMap.emplace("crosshair", Shader("./shaders/crosshair.vs", "./shaders/crosshair.fs"));
 	m_shaderMap.emplace("cube", Shader("./shaders/cube.vs", "./shaders/cube.fs"));
 	m_shaderMap.emplace("flower", Shader("./shaders/flower.vs", "./shaders/flower.fs"));
+	m_shaderMap.emplace("depthMap", Shader("./shaders/depthMap.vs", "./shaders/depthMap.fs"));
+	m_shaderMap.emplace("debugDepth", Shader("./shaders/debugDepth.vs", "./shaders/debugDepth.fs"));
+	
 }
 
 void OpenCraft::initItems(void)
@@ -110,9 +131,12 @@ void OpenCraft::startRenderLoop(void)
 		// render items
 
 		renderTestBlock();
+		
+		
 		renderSkyBox();
 		renderCrossair();
 		renderHand();
+		
 
 		// final works
 		glfwSwapBuffers(m_window);
@@ -207,6 +231,36 @@ void OpenCraft::renderSkyBox(void)
 	m_itemMap.at("skybox")->draw(skyboxShader);
 }
 
+
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+	if (quadVAO == 0)
+	{
+		float quadVertices[] = {
+			// positions        // texture Coords
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+			1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		};
+		// setup plane VAO
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+}
+
 void OpenCraft::renderTestBlock(void)
 {
 	glEnable(GL_FRAMEBUFFER_SRGB);
@@ -226,7 +280,7 @@ void OpenCraft::renderTestBlock(void)
 	blockShader.setMat4("projection", projection);
 	blockShader.setVec3("viewPos", m_camera.getPosition());
 	//blockShader.setVec3("dirLight.direction", 0.0f, 1.0f, -1.0f);
-	blockShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+	blockShader.setVec3("dirLight.direction", 3.5f, -4.0f, 5.0f);
 	blockShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
 	blockShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
 	blockShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
@@ -252,8 +306,20 @@ void OpenCraft::renderTestBlock(void)
 	{
 		cubeModelMatlMap.clear();
 		fastModelMatMap.clear();
+		auto realPos = m_chunkManager.calRealPos(m_camera.getPosition());
+		auto posP = std::get<0>(realPos);
+		auto posQ = std::get<1>(realPos);
 		for (auto chunk : chunks)
 		{
+			if (abs(chunk->p - posP) > 1 && abs(chunk->q - posQ) > 1)
+			{
+				auto viewDir = glm::vec2(m_camera.getFront()[0], m_camera.getFront()[1]);
+				auto chunkDir = glm::vec2(chunk->p - posP, chunk->q - posQ);
+				if (glm::dot(viewDir, chunkDir) <= 0)
+				{
+					continue;
+				}
+			}
 			for (int x = 0; x < 16; x++)
 			{
 				for (int z = 0; z < 16; z++)
@@ -266,7 +332,6 @@ void OpenCraft::renderTestBlock(void)
 							{
 								continue;
 							}
-							
 							glm::mat4 model;
 							model = glm::translate(model, glm::vec3(chunk->p * 4, 0, chunk->q * 4));
 							model = glm::translate(model, glm::vec3(x*0.25, y*0.25, z*0.25));
@@ -300,14 +365,66 @@ void OpenCraft::renderTestBlock(void)
 			}
 		}
 	}
+	// render depthMap
 
+	//Render depth map
+	
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	const glm::vec3 lightPos(-3.5f, 4.0f, -5.0f);
+	auto lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 20.0f);
+	auto lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+	auto lightSpaceMatrix = lightProjection * lightView;
+	auto depthShader = m_shaderMap.at("depthMap");
+	depthShader.use();
+	depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+	glViewport(0, 0, SHADOW_MAP_WIDTH, SHADOW_MAP_HEIGHT);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
 	for (auto cubeModelMat : fastModelMatMap)
 	{
 		auto cubeType = cubeModelMat.first;
 		auto start = cubeModelMat.second.first;
 		auto instanceCount = cubeModelMat.second.second;
 		fastModelMatMap[cubeType].second = instanceCount;
-		if ((cubeType%1000000) < 1024)
+		if ((cubeType % 1000000) < 1024)
+		{
+			m_renderer.renderCubes(cubeType, depthShader, models + start, instanceCount);
+		}
+		else
+		{
+			m_renderer.renderCubes(cubeType, depthShader, models + start, instanceCount);
+		}
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
+	
+	//auto debugDepthQuad = m_shaderMap.at("debugDepth");
+	//debugDepthQuad.use();
+	//debugDepthQuad.setInt("depthMap", 0);
+	//debugDepthQuad.setFloat("near_plane", 0.01f);
+	//debugDepthQuad.setFloat("far_plane", 7.5f);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, depthMap);
+	//renderQuad();
+	
+
+	// 2. then render scene as normal with shadow mapping (using depth map)
+	
+	glViewport(0, 0, DEFAULT_SCR_WIDTH, DEFAULT_SCR_HEIGHT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	blockShader.use();
+	blockShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+	blockShader.setInt("shadowMap", 2);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	for (auto cubeModelMat : fastModelMatMap)
+	{
+		auto cubeType = cubeModelMat.first;
+		auto start = cubeModelMat.second.first;
+		auto instanceCount = cubeModelMat.second.second;
+		fastModelMatMap[cubeType].second = instanceCount;
+		if ((cubeType % 1000000) < 1024)
 		{
 			m_renderer.renderCubes(cubeType, blockShader, models + start, instanceCount);
 		}
