@@ -14,3 +14,11 @@ struct Chunk
 	std::array<Cube, CHUNK_SIZE> cubes;
 };
 
+struct RanderUnit
+{
+	int32_t p, q;
+	int32_t x, y, z;
+	CubeType type;
+	int32_t durability;
+};
+

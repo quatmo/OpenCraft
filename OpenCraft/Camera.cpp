@@ -47,30 +47,32 @@ void Camera::jump()
 
 void Camera::step(const float deltaTime, ChunkManager& chunkManager)
 {
-	
-	float deltaV = ACCERATION * deltaTime;
-	auto floorDistance = chunkManager.calFloorDistance(m_position);
-	if (fabs(m_ySpeed) > 1E-8 || floorDistance-0.375f > 1E-8)
+	if (m_roamMode == false)
 	{
-		if (m_ySpeed < 0)
+		float deltaV = ACCERATION * deltaTime;
+		auto floorDistance = chunkManager.calFloorDistance(m_position);
+		if (fabs(m_ySpeed) > 1E-8 || floorDistance - 0.375f > 1E-8)
 		{
-			m_position += glm::vec3(0, -m_ySpeed, 0);
-		}
-		else
-		{
-			auto floorDistance = chunkManager.calFloorDistance(m_position);
-			if (floorDistance - 0.375f > m_ySpeed)
+			if (m_ySpeed < 0)
 			{
 				m_position += glm::vec3(0, -m_ySpeed, 0);
 			}
 			else
 			{
-				m_position += glm::vec3(0, -(floorDistance - 0.375f), 0);
-				m_ySpeed = 0;
-				return;
+				auto floorDistance = chunkManager.calFloorDistance(m_position);
+				if (floorDistance - 0.375f > m_ySpeed)
+				{
+					m_position += glm::vec3(0, -m_ySpeed, 0);
+				}
+				else
+				{
+					m_position += glm::vec3(0, -(floorDistance - 0.375f), 0);
+					m_ySpeed = 0;
+					return;
+				}
 			}
+			m_ySpeed += deltaV;
 		}
-		m_ySpeed += deltaV;
 	}
 }
 

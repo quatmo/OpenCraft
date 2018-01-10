@@ -12,3 +12,4 @@ struct Cube
 	int32_t direction;
 	int32_t durability;
 };
+

@@ -81,6 +81,7 @@ private:
 	// render functions
 	void renderSkyBox(void);
 	void renderTestBlock(void);
+	void renderBlocks(void);
 	void renderCrossair(void);
 	void renderHand(void);
 

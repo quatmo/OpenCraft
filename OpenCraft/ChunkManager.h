@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <set>
+#include <list>
 #include <utility>
 #include <tuple>
 #include <array>
@@ -19,7 +20,7 @@ public:
 	ChunkManager(const glm::vec3 cameraPos);
 
 	std::array<std::shared_ptr<Chunk>,5*5> getChunks(int *);
-
+	const std::list<RanderUnit>& getRenderUnit(int*,const glm::vec3);
 	std::tuple<int, int, int, int, int> calRealPos(const glm::vec3 worldPos)const;
 	glm::vec3 calWorldPos(const int p, const int q, const int x, const int y, const int z)const;
 	float calFloorDistance(const glm::vec3 pos);
@@ -36,13 +37,18 @@ public:
 	~ChunkManager();
 
 private:
+	const int FLOOD_SEARCH_DEPTH = 10000;
 	DBManager m_db;
 	int32_t m_p, m_q;
 	bool m_modified;
+	bool m_subtleModified;
+	void floodSearch(const int p, const int q, const int x, const int y, const int z);
 	std::unordered_map<int32_t,std::unordered_map<int32_t,std::shared_ptr<Chunk>>> m_chunkMap;
 	std::set<std::pair<int, int>> m_chunkSet;
+	std::list<RanderUnit> m_blocks;
+	std::set<std::tuple<int, int,int,int,int>> m_searched;
+	std::set<std::pair<int, int>> m_searchedPQ;
 	std::shared_ptr<Chunk> loadBasicChunk(const int32_t p, const int32_t q);
-
 
 };
 

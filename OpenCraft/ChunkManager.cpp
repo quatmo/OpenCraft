@@ -2,6 +2,7 @@
 #include <vector>
 #include <thread>
 #include <limits>
+#include <stack>
 #include <mutex>
 #include "ext/glm/gtc/noise.hpp"
 #include "ChunkManager.h"
@@ -12,7 +13,8 @@ ChunkManager::ChunkManager(const glm::vec3 cameraPos)
 	: m_db{ "opcraft" },
 	m_p(static_cast<int>(cameraPos[0] / 4) - (cameraPos[0] < 0 ? 1 : 0)),
 	m_q(static_cast<int>(cameraPos[2] / 4) - (cameraPos[2] < 0 ? 1 : 0)),
-	m_modified(false)
+	m_modified(false),
+	m_subtleModified(false)
 {
 	for (int dp = -8; dp < 8; dp++)
 	{
@@ -45,6 +47,47 @@ std::array<std::shared_ptr<Chunk>, 5 * 5> ChunkManager::getChunks(int* updated)
 		}
 	}
 	return res;
+}
+
+const std::list<RanderUnit>& ChunkManager::getRenderUnit(int *updated,const glm::vec3 pos)
+{
+
+	if (m_subtleModified == true)
+	{
+		m_subtleModified = false;
+		return m_blocks;
+	}
+	static int pre_m = std::numeric_limits<int>::max();
+	static int pre_n = std::numeric_limits<int>::max();
+	if (pre_m == m_p && pre_n == m_q && m_modified == false) // no need to change the chunk
+	{
+		*updated = -1;
+		return m_blocks;
+	}
+	m_modified = false;
+	pre_m = m_p;
+	pre_n = m_q;
+	auto realPos = calRealPos(pos);
+	auto chunkP = std::get<0>(realPos);
+	auto chunkQ = std::get<1>(realPos);
+	auto cubeX = std::get<2>(realPos);
+	auto cubeY = std::get<3>(realPos);
+	auto cubeZ = std::get<4>(realPos);
+	floodSearch(chunkP,chunkQ, cubeX, cubeY, cubeZ);
+	/*std::set<std::tuple<int, int, int, int, int,CubeType,int>> blockSet;
+	int counter = 0;
+	for (auto block : m_blocks)
+	{
+
+		if (blockSet.find({ block.p,block.q,block.x,block.y,block.z,block.type,block.durability }) != blockSet.end())
+		{
+			counter++;
+		}
+		blockSet.insert({ block.p,block.q,block.x,block.y,block.z,block.type,block.durability });
+	}
+	std::cerr << counter << " :duplicated" << std::endl;*/
+	std::cerr << m_blocks.size() << " blocks rendered" << std::endl;
+	return m_blocks;
 }
 
 float ChunkManager::calFloorDistance(const glm::vec3 pos)
@@ -169,12 +212,26 @@ void ChunkManager::tryDestoryCube(const glm::vec3 cameraPos, const glm::vec3 fro
 			{
 				chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].type = 0;
 				chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].durability = 0;
+				m_modified = true;
 			}
 			else
 			{
 				chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].durability++;
+				for (auto&& block : m_blocks)
+				{
+					if (block.p == std::get<0>(realPosToProbe) &&
+						block.q == std::get<1>(realPosToProbe) &&
+						block.x == probeX &&
+						block.y == probeY &&
+						block.z == probeZ)
+					{
+						block.durability = chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].durability;
+						break;
+					}
+				}
+				m_subtleModified = true;
 			}
-			m_modified = true;
+			
 			break;
 		}
 	}
@@ -218,6 +275,149 @@ void ChunkManager::tryPlaceCube(const glm::vec3 cameraPos, const glm::vec3 front
 
 ChunkManager::~ChunkManager()
 {
+}
+
+std::list<std::tuple<int, int, int, int, int>> searchStack;
+
+void ChunkManager::floodSearch( const int p, const int q, const int x, const int y, const int z)
+{
+	m_blocks.clear();
+	searchStack.clear();
+	searchStack.push_back({ p,q,x,y,z });
+	m_searched.clear();
+	m_searched.insert({ p,q,x,y,z });
+	while (!searchStack.empty())
+	{
+		auto currentBlock = searchStack.back();
+		searchStack.pop_back();
+		auto p = std::get<0>(currentBlock);
+		auto q = std::get<1>(currentBlock);
+		auto x = std::get<2>(currentBlock);
+		auto y = std::get<3>(currentBlock);
+		auto z = std::get<4>(currentBlock);
+		auto type = m_chunkMap[p][q]->cubes[x * 16 * 256 + z * 256 + y].type;
+		if (type != 0) // not air, not transparent
+		{
+			auto durability = m_chunkMap[p][q]->cubes[x * 16 * 256 + z * 256 + y].durability;
+			m_blocks.push_back({ p,q,x,y,z,type,durability });
+			if (type < 1024) // it's not transparent, we stop here
+			{
+				continue;
+			}
+		}
+		if (y + 1 < 11) // top
+		{
+			if (m_searched.find({ p,q,x,y + 1,z }) == m_searched.end())
+			{
+				if (abs(p - m_p) < 5 && abs(q - m_q) < 5)
+				{
+					searchStack.push_back({ p,q,x,y + 1,z });
+					m_searched.insert({ p,q,x,y + 1,z });
+				}
+			}
+		}
+		if (y - 1 >= 0) // bottom
+		{
+			if (m_searched.find({ p, q, x, y - 1, z }) == m_searched.end())
+			{
+				if (abs(p - m_p) < 5 && abs(q - m_q) < 5)
+				{
+					searchStack.push_back({ p, q, x, y - 1, z });
+					m_searched.insert({ p,q,x,y -1,z });
+				}
+			}
+		}
+		if (x - 1 >= 0) // left
+		{
+			if (m_searched.find({ p, q, x - 1, y, z }) == m_searched.end())
+			{
+				if (abs(p - m_p) < 5 && abs(q - m_q) < 5)
+				{
+					searchStack.push_back({ p, q, x - 1, y, z });
+					m_searched.insert({ p,q,x-1,y,z });
+				}
+			}
+		}
+		else
+		{
+			if (m_searched.find({ p - 1, q, 15, y, z }) == m_searched.end())
+			{
+				if (abs(p-1 - m_p) < 5 && abs(q - m_q) < 5)
+				{
+					searchStack.push_back({ p - 1, q, 15, y, z });
+					m_searched.insert({ p-1,q,15,y,z });
+				}
+
+			}
+		}
+		if (x + 1 < 16) // right
+		{
+			if (m_searched.find({ p, q, x + 1, y, z }) == m_searched.end())
+			{
+				if (abs(p - m_p) < 5 && abs(q - m_q) < 5)
+				{
+					searchStack.push_back({ p, q, x + 1, y, z });
+					m_searched.insert({ p,q,x+1,y,z });
+				}
+			}
+		}
+		else
+		{
+			if (m_searched.find({ p + 1, q, 0, y, z }) == m_searched.end())
+			{
+				if (abs(p+1 - m_p) < 5 && abs(q - m_q) < 5)
+				{
+					searchStack.push_back({ p + 1, q, 0, y, z });
+					m_searched.insert({ p+1,q,0,y,z });
+				}
+			}
+		}
+		if (z + 1 < 16) // front
+		{
+			if (m_searched.find({ p, q, x, y, z + 1 }) == m_searched.end())
+			{
+				if (abs(p - m_p) < 5 && abs(q - m_q) < 5)
+				{
+					searchStack.push_back({ p, q, x, y, z + 1 });
+					m_searched.insert({ p,q,x,y,z+1 });
+				}
+			}
+		}
+		else
+		{
+			if (m_searched.find({ p, q + 1, x, y, 0 }) == m_searched.end())
+			{
+				if (abs(p - m_p) < 5 && abs(q+1 - m_q) < 5)
+				{
+					searchStack.push_back({ p, q + 1, x, y, 0 });
+					m_searched.insert({ p,q+1,x,y,0 });
+				}
+			}
+		}
+		if (z - 1 >= 0) // back
+		{
+			if (m_searched.find({ p, q, x, y, z - 1 }) == m_searched.end())
+			{
+				if (abs(p - m_p) < 5 && abs(q - m_q) < 5)
+				{
+					searchStack.push_back({ p, q, x, y, z - 1 });
+					m_searched.insert({ p,q,x,y,z-1 });
+				}
+			}
+		}
+		else
+		{
+			if (m_searched.find({ p, q-1, x, y, 15 }) == m_searched.end())
+			{
+				if (abs(p - m_p) < 5 && abs(q -1- m_q) < 5)
+				{
+					searchStack.push_back({ p, q-1, x, y, 15 });
+					m_searched.insert({ p,q-1,x,y,15 });
+				}
+			}
+		}
+	}
+
 }
 
 std::shared_ptr<Chunk> ChunkManager::loadBasicChunk(const int32_t p, const int32_t q)

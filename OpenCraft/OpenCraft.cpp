@@ -130,8 +130,8 @@ void OpenCraft::startRenderLoop(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// render items
 
-		renderTestBlock();
-		
+		//renderTestBlock();
+		renderBlocks();
 		
 		renderSkyBox();
 		renderCrossair();
@@ -408,9 +408,137 @@ void OpenCraft::renderTestBlock(void)
 	//glBindTexture(GL_TEXTURE_2D, depthMap);
 	//renderQuad();
 	
-
 	// 2. then render scene as normal with shadow mapping (using depth map)
 	
+	glViewport(0, 0, DEFAULT_SCR_WIDTH, DEFAULT_SCR_HEIGHT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	blockShader.use();
+	blockShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+	blockShader.setInt("shadowMap", 2);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	for (auto cubeModelMat : fastModelMatMap)
+	{
+		auto cubeType = cubeModelMat.first;
+		auto start = cubeModelMat.second.first;
+		auto instanceCount = cubeModelMat.second.second;
+		fastModelMatMap[cubeType].second = instanceCount;
+		if ((cubeType % 1000000) < 1024)
+		{
+			m_renderer.renderCubes(cubeType, blockShader, models + start, instanceCount);
+		}
+		else
+		{
+			m_renderer.renderCubes(cubeType, flowerShader, models + start, instanceCount);
+		}
+	}
+}
+
+void OpenCraft::renderBlocks(void)
+{
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	static glm::mat4 models[16 * 16 * 256 * 4];
+
+	auto flowerShader = m_shaderMap.at("flower");
+	auto blockShader = m_shaderMap.at("cube");
+	glm::mat4 view = m_camera.getViewMatrix();
+	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 20.0f);
+
+	flowerShader.use();
+	flowerShader.setMat4("view", view);
+	flowerShader.setMat4("projection", projection);
+
+	blockShader.use();
+	blockShader.setMat4("view", view);
+	blockShader.setMat4("projection", projection);
+	blockShader.setVec3("viewPos", m_camera.getPosition());
+	//blockShader.setVec3("dirLight.direction", 0.0f, 1.0f, -1.0f);
+	blockShader.setVec3("dirLight.direction", 3.5f, -4.0f, 5.0f);
+	blockShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
+	blockShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+	blockShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
+
+	blockShader.setVec3("spotLight.position", m_camera.getPosition());
+	blockShader.setVec3("spotLight.direction", m_camera.getFront());
+	blockShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+	blockShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+	blockShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	blockShader.setFloat("spotLight.constant", 1.0f);
+	blockShader.setFloat("spotLight.linear", 0.09f);
+	blockShader.setFloat("spotLight.quadratic", 0.032f);
+	blockShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+	blockShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
+	int index = 0;
+	int chunkCount = 0;
+	int updated = 0;
+	auto renderUnits = m_chunkManager.getRenderUnit(&updated, m_camera.getPosition());
+	static std::unordered_map<CubeType, std::list<glm::mat4>> cubeModelMatlMap;
+	static std::unordered_map<CubeType, std::pair<int, int>> fastModelMatMap;
+	if (updated == 0) //need to update model matrics
+	{
+		cubeModelMatlMap.clear();
+		fastModelMatMap.clear();
+		for (auto renderUnit : renderUnits)
+		{
+			glm::mat4 model;
+			model = glm::translate(model, glm::vec3(renderUnit.p * 4, 0, renderUnit.q* 4));
+			model = glm::translate(model, glm::vec3(renderUnit.x*0.25, renderUnit.y*0.25, renderUnit.z*0.25));
+			model = glm::translate(model, glm::vec3(0.125, 0.125, 0.125));
+			model = glm::scale(model, glm::vec3(0.125f));
+			if (renderUnit.durability != 0)
+			{
+				cubeModelMatlMap[renderUnit.type + 1000000 * renderUnit.durability].push_back(model);
+			}
+			else
+			{
+				cubeModelMatlMap[renderUnit.type].push_back(model);
+			}
+			chunkCount++;
+		}
+		int index = 0;
+		for (auto cubeModelMat : cubeModelMatlMap)
+		{
+			auto cubeType = cubeModelMat.first;
+			auto instanceCount = cubeModelMat.second.size();
+			fastModelMatMap[cubeType].first = index;
+			fastModelMatMap[cubeType].second = instanceCount;
+			for (auto model : cubeModelMat.second)
+			{
+				models[index++] = model;
+			}
+		}
+	}
+
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	const glm::vec3 lightPos(-3.5f, 4.0f, -5.0f);
+	auto lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 20.0f);
+	auto lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+	auto lightSpaceMatrix = lightProjection * lightView;
+	auto depthShader = m_shaderMap.at("depthMap");
+	depthShader.use();
+	depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+	glViewport(0, 0, SHADOW_MAP_WIDTH, SHADOW_MAP_HEIGHT);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	for (auto cubeModelMat : fastModelMatMap)
+	{
+		auto cubeType = cubeModelMat.first;
+		auto start = cubeModelMat.second.first;
+		auto instanceCount = cubeModelMat.second.second;
+		fastModelMatMap[cubeType].second = instanceCount;
+		if ((cubeType % 1000000) < 1024)
+		{
+			m_renderer.renderCubes(cubeType, depthShader, models + start, instanceCount);
+		}
+		else
+		{
+			m_renderer.renderCubes(cubeType, depthShader, models + start, instanceCount);
+		}
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	glViewport(0, 0, DEFAULT_SCR_WIDTH, DEFAULT_SCR_HEIGHT);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	blockShader.use();
