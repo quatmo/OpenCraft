@@ -3,6 +3,7 @@
 
 std::unordered_map<std::string, unsigned int> TextureManager::m_cubeTextureMap;
 std::unordered_map<std::string, unsigned int> TextureManager::m_faceTextureMap;
+std::unordered_map<std::string, unsigned int> TextureManager::m_normTextureMap;
 
 unsigned int TextureManager::getCubeTexture(const std::string textureName)
 {
@@ -20,6 +21,15 @@ unsigned int TextureManager::getFaceTexture(const std::string textureName)
 		loadFaceTexture(textureName); // load it 
 	}
 	return m_faceTextureMap.at(textureName);
+}
+
+unsigned int TextureManager::getNormTexture(const std::string textureName)
+{
+	if (m_normTextureMap.find(textureName) == m_normTextureMap.end()) // not in the map
+	{
+		loadNormTexture(textureName); // load it 
+	}
+	return m_normTextureMap.at(textureName);
 }
 
 void TextureManager::loadCubeTexture(const std::string textureName)
@@ -48,4 +58,11 @@ void TextureManager::loadFaceTexture(const std::string textureName)
 	std::string filePath = "./textures/";
 	filePath += textureName + "/face.png";
 	m_faceTextureMap[textureName] = loadTexture(filePath.c_str());
+}
+
+void TextureManager::loadNormTexture(const std::string textureName)
+{
+	std::string filePath = "./textures/";
+	filePath += textureName + "/norm.png";
+	m_normTextureMap[textureName] = loadTexture(filePath.c_str());
 }

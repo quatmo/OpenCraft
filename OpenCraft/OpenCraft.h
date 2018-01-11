@@ -16,6 +16,7 @@
 #include "Camera.h"
 #include "Item.h"
 #include "ChunkManager.h"
+#include "Model.h"
 
 constexpr unsigned int DEFAULT_SCR_WIDTH = 800;
 constexpr unsigned int DEFAULT_SCR_HEIGHT = 600;
@@ -61,14 +62,18 @@ private:
 	static ChunkManager m_chunkManager;
 	static CubeType m_blockOnHand;
 	static int m_handMoveStage;
+	static glm::vec3 m_sunPos;
+
 	// basic facility collections
 	std::unordered_map<std::string, Shader> m_shaderMap;
 	std::unordered_map<std::string, std::unique_ptr<Item>> m_itemMap;
+	std::unordered_map<std::string, Model> m_modelMap;
 
 	// init functions
 	int initWindowSettings(void);
 	void initShaders(void);
 	void initItems(void);
+	void initModels(void);
 
 	// render loop
 	void startRenderLoop(void);
@@ -84,6 +89,7 @@ private:
 	void renderBlocks(void);
 	void renderCrossair(void);
 	void renderHand(void);
+	void renderTestModel(void);
 
 	//call back functions
 	static void framebuffer_size_callback(GLFWwindow* window, int width, int height);

@@ -14,6 +14,7 @@ float OpenCraft::m_lastX = 0.0;
 float OpenCraft::m_lastY = 0.0;
 CubeType OpenCraft::m_blockOnHand = 2;
 int OpenCraft::m_handMoveStage = 0;
+glm::vec3 OpenCraft::m_sunPos(3.5f, -4.0f, 5.0f);
 
 
 OpenCraft::OpenCraft(const unsigned int SCR_WIDTH, const unsigned int SCR_HEIGHT)
@@ -48,6 +49,7 @@ void OpenCraft::start(void)
 	// do the basic initializations
 	initShaders();
 	initItems();
+	initModels();
 
 	startRenderLoop();
 }
@@ -102,6 +104,7 @@ void OpenCraft::initShaders(void)
 	m_shaderMap.emplace("cube", Shader("./shaders/cube.vs", "./shaders/cube.fs"));
 	m_shaderMap.emplace("flower", Shader("./shaders/flower.vs", "./shaders/flower.fs"));
 	m_shaderMap.emplace("depthMap", Shader("./shaders/depthMap.vs", "./shaders/depthMap.fs"));
+	m_shaderMap.emplace("model", Shader("./shaders/model.vs", "./shaders/model.fs"));
 	m_shaderMap.emplace("debugDepth", Shader("./shaders/debugDepth.vs", "./shaders/debugDepth.fs"));
 	
 }
@@ -111,6 +114,11 @@ void OpenCraft::initItems(void)
 	m_itemMap.emplace("skybox", new SkyBox);
 	m_itemMap.emplace("block", new Block);
 	m_itemMap.emplace("crosshair", new Crosshair);
+}
+
+void OpenCraft::initModels(void)
+{
+	//m_modelMap.emplace("sun", Model("./models/sun/sun.obj"));
 }
 
 void OpenCraft::startRenderLoop(void)
@@ -131,11 +139,12 @@ void OpenCraft::startRenderLoop(void)
 		// render items
 
 		//renderTestBlock();
+
 		renderBlocks();
-		
 		renderSkyBox();
 		renderCrossair();
 		renderHand();
+		//renderModel();
 		
 
 		// final works
@@ -174,6 +183,11 @@ void OpenCraft::processInput(void)
 	{
 		m_handMoveStage = 16;
 		m_blockOnHand = 1026;
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_6) == GLFW_PRESS)
+	{
+		m_handMoveStage = 16;
+		m_blockOnHand = 1025;
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_SPACE) == GLFW_PRESS)
 	{
@@ -358,7 +372,7 @@ void OpenCraft::renderTestBlock(void)
 			auto cubeType = cubeModelMat.first;
 			auto instanceCount = cubeModelMat.second.size();
 			fastModelMatMap[cubeType].first = index;
-			fastModelMatMap[cubeType].second = instanceCount;
+			fastModelMatMap[cubeType].second = static_cast<int>(instanceCount);
 			for (auto model : cubeModelMat.second)
 			{
 				models[index++] = model;
@@ -439,6 +453,7 @@ void OpenCraft::renderBlocks(void)
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	static glm::mat4 models[16 * 16 * 256 * 4];
 
+	auto modelShader = m_shaderMap.at("model");
 	auto flowerShader = m_shaderMap.at("flower");
 	auto blockShader = m_shaderMap.at("cube");
 	glm::mat4 view = m_camera.getViewMatrix();
@@ -448,14 +463,19 @@ void OpenCraft::renderBlocks(void)
 	flowerShader.setMat4("view", view);
 	flowerShader.setMat4("projection", projection);
 
+	modelShader.use();
+	modelShader.setMat4("view", view);
+	modelShader.setMat4("projection", projection);
+
 	blockShader.use();
 	blockShader.setMat4("view", view);
 	blockShader.setMat4("projection", projection);
 	blockShader.setVec3("viewPos", m_camera.getPosition());
+
 	//blockShader.setVec3("dirLight.direction", 0.0f, 1.0f, -1.0f);
-	blockShader.setVec3("dirLight.direction", 3.5f, -4.0f, 5.0f);
+	blockShader.setVec3("dirLight.direction", m_sunPos.x, m_sunPos.y, m_sunPos.z);
 	blockShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
-	blockShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+	blockShader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 0.8f);
 	blockShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
 
 	blockShader.setVec3("spotLight.position", m_camera.getPosition());
@@ -502,7 +522,7 @@ void OpenCraft::renderBlocks(void)
 			auto cubeType = cubeModelMat.first;
 			auto instanceCount = cubeModelMat.second.size();
 			fastModelMatMap[cubeType].first = index;
-			fastModelMatMap[cubeType].second = instanceCount;
+			fastModelMatMap[cubeType].second = static_cast<int>(instanceCount);
 			for (auto model : cubeModelMat.second)
 			{
 				models[index++] = model;
@@ -512,9 +532,9 @@ void OpenCraft::renderBlocks(void)
 
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	const glm::vec3 lightPos(-3.5f, 4.0f, -5.0f);
+	const glm::vec3 lightPos(-m_sunPos);
 	auto lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 20.0f);
-	auto lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+	auto lightView = glm::lookAt(lightPos, glm::vec3(0.0), glm::vec3(0.0, 1.0, 0.0));
 	auto lightSpaceMatrix = lightProjection * lightView;
 	auto depthShader = m_shaderMap.at("depthMap");
 	depthShader.use();
@@ -522,13 +542,21 @@ void OpenCraft::renderBlocks(void)
 	glViewport(0, 0, SHADOW_MAP_WIDTH, SHADOW_MAP_HEIGHT);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
+
 	for (auto cubeModelMat : fastModelMatMap)
 	{
 		auto cubeType = cubeModelMat.first;
 		auto start = cubeModelMat.second.first;
 		auto instanceCount = cubeModelMat.second.second;
 		fastModelMatMap[cubeType].second = instanceCount;
-		if ((cubeType % 1000000) < 1024)
+		if (cubeType == 1025)
+		{
+			modelShader.use();
+			modelShader.setMat4("view", lightView);
+			modelShader.setMat4("projection", lightProjection);
+			m_renderer.renderModel(modelShader, models + start, instanceCount);
+		}
+		else if ((cubeType % 1000000) < 1024)
 		{
 			m_renderer.renderCubes(cubeType, depthShader, models + start, instanceCount);
 		}
@@ -552,7 +580,14 @@ void OpenCraft::renderBlocks(void)
 		auto start = cubeModelMat.second.first;
 		auto instanceCount = cubeModelMat.second.second;
 		fastModelMatMap[cubeType].second = instanceCount;
-		if ((cubeType % 1000000) < 1024)
+		if (cubeType == 1025)
+		{
+			modelShader.use();
+			modelShader.setMat4("view", view);
+			modelShader.setMat4("projection",projection);
+			m_renderer.renderModel(modelShader,models+start,instanceCount);
+		}
+		else if ((cubeType % 1000000) < 1024)
 		{
 			m_renderer.renderCubes(cubeType, blockShader, models + start, instanceCount);
 		}
@@ -561,6 +596,7 @@ void OpenCraft::renderBlocks(void)
 			m_renderer.renderCubes(cubeType, flowerShader, models + start, instanceCount);
 		}
 	}
+
 }
 
 void OpenCraft::renderCrossair(void)
@@ -581,6 +617,7 @@ void OpenCraft::renderHand(void)
 {
 	glDisable(GL_DEPTH_TEST);
 	auto blockShader = m_shaderMap.at("cube");
+	auto modelShader = m_shaderMap.at("model");
 	glm::mat4 view;
 	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 20.0f);
 	blockShader.use();
@@ -588,37 +625,52 @@ void OpenCraft::renderHand(void)
 	if (m_handMoveStage != 0)
 	{
 		m_handMoveStage -= 1;
-		view = glm::rotate(view, (0.2f/16)*m_handMoveStage, glm::vec3(-1.0f, 1.5f, 1.0f));
+		view = glm::rotate(view, (0.1f/16)*m_handMoveStage, glm::vec3(1.0f, 1.0f, 1.0f));
 	}
-
+	//(-1.0f, 1.5f,1.0f));
 	blockShader.setMat4("view", view);
 	blockShader.setMat4("projection", projection);
 	blockShader.setVec3("viewPos", m_camera.getPosition());
 	//blockShader.setVec3("dirLight.direction", 0.0f, 1.0f, -1.0f);
 	blockShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-	blockShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
-	blockShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-	blockShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
-
-	blockShader.setVec3("spotLight.position", m_camera.getPosition());
-	blockShader.setVec3("spotLight.direction", m_camera.getFront());
-	blockShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-	blockShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-	blockShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-	blockShader.setFloat("spotLight.constant", 1.0f);
-	blockShader.setFloat("spotLight.linear", 0.09f);
-	blockShader.setFloat("spotLight.quadratic", 0.032f);
-	blockShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-	blockShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+	blockShader.setVec3("dirLight.ambient", 0.7f, 0.7f, 0.7f);
+	modelShader.use();
+	modelShader.setMat4("view", view);
+	modelShader.setMat4("projection", projection);
 
 	glm::mat4 model;
 
-	model = glm::translate(model,glm::vec3(0.2f,-0.2f,-0.5f));
-	model = glm::rotate(model, 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	model = glm::scale(model,glm::vec3(0.1f));
-
-	m_renderer.renderCubes(m_blockOnHand, blockShader, &model, 1);
+	if (m_blockOnHand == 1025)
+	{
+		model = glm::translate(model, glm::vec3(0.2f, -0.2f, -0.5f));
+		model = glm::rotate(model, 25.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.1f));
+		m_renderer.renderModel(modelShader, &model, 1);
+	}
+	else
+	{
+		model = glm::translate(model, glm::vec3(0.2f, -0.2f, -0.5f));
+		model = glm::rotate(model, 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.1f));
+		m_renderer.renderCubes(m_blockOnHand, blockShader, &model, 1);
+	}
 	glEnable(GL_DEPTH_TEST);
+}
+
+void OpenCraft::renderTestModel(void)
+{
+	auto planetShader = m_shaderMap.at("sun");
+	planetShader.use();
+	glm::mat4 model;
+	model = glm::rotate(model, static_cast<float>(glfwGetTime() / 10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(1.0f));
+	glm::mat4 view = m_camera.getViewMatrix();
+	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)DEFAULT_SCR_WIDTH / (float)DEFAULT_SCR_HEIGHT, 0.1f, 3000.0f);
+	planetShader.setMat4("model", model);
+	planetShader.setMat4("view", view);
+	planetShader.setMat4("projection", projection);
+	planetShader.setVec3("cameraPos", m_camera.getPosition());
+	m_modelMap.at("sun").draw(planetShader);	// draw scene as normal
 }
 
 void OpenCraft::framebuffer_size_callback(GLFWwindow * window, int width, int height)

@@ -7,9 +7,11 @@
 
 #include "TextureManager.h"
 #include "Renderer.h"
+#include "Model.h"
 
 using namespace std;
 
+std::unordered_map<std::string, Model> modelMap;
 
 // 1~1024 for typical blocks
 // 1025~999999 for transparent blocks
@@ -24,6 +26,7 @@ renderDispatcher =
 	{3,renderRedStoneBlock},
 	{4,renderOak},
 	{5,renderLeaf},
+	{1025,renderModel},
 	{1026,renderFlower}
 };
 
@@ -67,6 +70,23 @@ void Renderer::renderCubes(CubeType cubeType, const Shader shader, glm::mat4* mo
 	// never forget to release the resource
 	glDeleteBuffers(1, &instanceVBO);
 
+}
+
+void Renderer::renderModel(Shader shader, glm::mat4 * models, const int instanceCount)
+{
+	if (modelMap.find("sun") == modelMap.end())
+	{
+		modelMap.emplace("sun", Model("./models/chest/treasure_chest.obj"));
+	}
+	glm::mat4 model;
+	model = glm::translate(model, glm::vec3(0.0f, -1.00f, 0.0f));
+	model = glm::scale(model,glm::vec3(1.0f));
+	shader.use();
+	for (int i = 0; i < instanceCount; i++)
+	{
+		shader.setMat4("model", models[i]*model);
+		modelMap.at("sun").draw(shader);	// draw scene as normal
+	}
 }
 
 Renderer::~Renderer()
@@ -134,11 +154,11 @@ void renderBasicBlock(const Shader shader, const unsigned int VAO, const int ins
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
-	shader.setInt("texture", 0);
+	shader.setInt("texture1", 0);
 	shader.setInt("durabilityTexture", 1);
+	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture(name));
-
 	if (durability == 0)
 	{
 		glActiveTexture(GL_TEXTURE1);
@@ -151,12 +171,12 @@ void renderBasicBlock(const Shader shader, const unsigned int VAO, const int ins
 		glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture("destroy_stage_"+std::to_string(durability)));
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, instanceCount);
 	}
-	
-	glDisable(GL_CULL_FACE);
+
 	glBindVertexArray(0);
 	// never forget to release the resource
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
+	glDisable(GL_CULL_FACE);
 }
 
 
@@ -183,6 +203,11 @@ void renderOak(const Shader shader, const unsigned int VAO, const int instanceCo
 void renderLeaf(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
 {
 	renderBasicBlock(shader, VAO, instanceCount, "leaf", durability);
+}
+
+void renderModel(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+
 }
 
 
