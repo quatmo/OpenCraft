@@ -37,6 +37,11 @@ glm::mat4 Camera::getViewMatrix() const
 	return glm::lookAt(m_position, m_position + m_front, m_up);
 }
 
+void Camera::switchMoveMode()
+{
+	m_roamMode = !m_roamMode;
+}
+
 void Camera::jump()
 {
 	if (fabs(m_ySpeed) < 1E-8)

@@ -4,12 +4,15 @@
 #include <string>
 #include <memory>
 
-#include "glad.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
+#include <glad.h>
 #include <GLFW/glfw3.h>
-#include "ext/glm/glm.hpp"
-#include "ext/glm/gtc/matrix_transform.hpp"
-#include "ext/glm/gtc/type_ptr.hpp"
-#include "stb_image.h"
+#include <ext/glm/glm.hpp>
+#include <ext/glm/gtc/matrix_transform.hpp>
+#include <ext/glm/gtc/type_ptr.hpp>
+#include <stb_image.h>
 
 #include "Shader.h"
 #include "Renderer.h"
@@ -22,6 +25,14 @@ constexpr unsigned int DEFAULT_SCR_WIDTH = 800;
 constexpr unsigned int DEFAULT_SCR_HEIGHT = 600;
 constexpr unsigned int SHADOW_MAP_WIDTH = 1024;
 constexpr unsigned int SHADOW_MAP_HEIGHT = 1024;
+
+struct Character {
+	GLuint TextureID;  
+	glm::ivec2 Size;   
+	glm::ivec2 Bearing;
+	GLuint Advance;    
+};
+
 
 class OpenCraft
 {
@@ -41,6 +52,9 @@ private:
 	const unsigned int m_screenHeight;
 	unsigned int depthMapFBO;
 	unsigned int depthMap;
+	std::unordered_map<GLchar, Character> m_characters;
+	GLuint m_characterVAO;
+	GLuint m_characterVBO;
 
 	//C-style ptr
 	GLFWwindow* m_window = NULL;
@@ -51,6 +65,7 @@ private:
 	// timing
 	float m_deltaTime = 0.0f;
 	float m_lastFrame = 0.0f;
+	float m_FPS;
 
 
 	// last position for mouse cursor
@@ -63,6 +78,8 @@ private:
 	static CubeType m_blockOnHand;
 	static int m_handMoveStage;
 	static glm::vec3 m_sunPos;
+	static glm::vec3 m_pointLight;
+	static glm::mat4 m_sunModel;
 
 	// basic facility collections
 	std::unordered_map<std::string, Shader> m_shaderMap;
@@ -74,6 +91,7 @@ private:
 	void initShaders(void);
 	void initItems(void);
 	void initModels(void);
+	void initText(void);
 
 	// render loop
 	void startRenderLoop(void);
@@ -90,6 +108,8 @@ private:
 	void renderCrossair(void);
 	void renderHand(void);
 	void renderTestModel(void);
+	void renderText(void);
+	void renderTextHelper(Shader &shader, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color);
 
 	//call back functions
 	static void framebuffer_size_callback(GLFWwindow* window, int width, int height);

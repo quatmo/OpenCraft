@@ -49,7 +49,7 @@ std::array<std::shared_ptr<Chunk>, 5 * 5> ChunkManager::getChunks(int* updated)
 	return res;
 }
 
-const std::list<RanderUnit>& ChunkManager::getRenderUnit(int *updated,const glm::vec3 pos)
+const std::list<RanderUnit>& ChunkManager::getRenderUnit(int *updated, const glm::vec3 pos)
 {
 
 	if (m_subtleModified == true)
@@ -59,7 +59,7 @@ const std::list<RanderUnit>& ChunkManager::getRenderUnit(int *updated,const glm:
 	}
 	static int pre_m = std::numeric_limits<int>::max();
 	static int pre_n = std::numeric_limits<int>::max();
-	if (pre_m == m_p && pre_n == m_q && m_modified == false) // no need to change the chunk
+	if (abs(pre_m - m_p) < 2 && abs(pre_n - m_q) < 2 && m_modified == false) // no need to change the chunk
 	{
 		*updated = -1;
 		return m_blocks;
@@ -73,7 +73,7 @@ const std::list<RanderUnit>& ChunkManager::getRenderUnit(int *updated,const glm:
 	auto cubeX = std::get<2>(realPos);
 	auto cubeY = std::get<3>(realPos);
 	auto cubeZ = std::get<4>(realPos);
-	floodSearch(chunkP,chunkQ, cubeX, cubeY, cubeZ);
+	floodSearch(chunkP, chunkQ, cubeX, cubeY, cubeZ);
 	/*std::set<std::tuple<int, int, int, int, int,CubeType,int>> blockSet;
 	int counter = 0;
 	for (auto block : m_blocks)
@@ -104,7 +104,7 @@ float ChunkManager::calFloorDistance(const glm::vec3 pos)
 	{
 		cubeY -= 1;
 		auto type = m_chunkMap[chunkP][chunkQ]->cubes[cubeX * 16 * 256 + cubeZ * 256 + cubeY].type;
-		if (type!= 0 && type < 1024)
+		if (type != 0 && type < 1024)
 		{
 			break;
 		}
@@ -130,7 +130,7 @@ bool ChunkManager::testSurrounding(const int p, const int q, const int x, const 
 	};
 	for (auto testDir : testVec)
 	{
-		auto realPosToProbe = calRealPos(wordPos+testDir);
+		auto realPosToProbe = calRealPos(wordPos + testDir);
 		auto && chunk = m_chunkMap[std::get<0>(realPosToProbe)][std::get<1>(realPosToProbe)];
 		auto probeX = std::get<2>(realPosToProbe);
 		auto probeY = std::get<3>(realPosToProbe);
@@ -231,14 +231,14 @@ void ChunkManager::tryDestoryCube(const glm::vec3 cameraPos, const glm::vec3 fro
 				}
 				m_subtleModified = true;
 			}
-			
+
 			break;
 		}
 	}
 
 }
 
-void ChunkManager::tryPlaceCube(const glm::vec3 cameraPos, const glm::vec3 frontVec3,const CubeType cubeType)
+void ChunkManager::tryPlaceCube(const glm::vec3 cameraPos, const glm::vec3 frontVec3, const CubeType cubeType)
 {
 	auto realPos = calRealPos(cameraPos);
 	auto cubeX = std::get<2>(realPos);
@@ -270,7 +270,7 @@ void ChunkManager::tryPlaceCube(const glm::vec3 cameraPos, const glm::vec3 front
 		auto placeY = std::get<3>(realPosToPlace);
 		auto placeZ = std::get<4>(realPosToPlace);
 		chunk->cubes[placeX * 16 * 256 + placeZ * 256 + placeY].type = cubeType;
-		m_blocks.push_back({ std::get<0>(realPosToPlace) ,std::get<1>(realPosToPlace),placeX,placeY,placeZ,cubeType,0});
+		m_blocks.push_back({ std::get<0>(realPosToPlace) ,std::get<1>(realPosToPlace),placeX,placeY,placeZ,cubeType,0 });
 	}
 
 }
@@ -281,7 +281,7 @@ ChunkManager::~ChunkManager()
 
 std::list<std::tuple<int, int, int, int, int>> searchStack;
 
-void ChunkManager::floodSearch( const int p, const int q, const int x, const int y, const int z)
+void ChunkManager::floodSearch(const int p, const int q, const int x, const int y, const int z)
 {
 	const int fill_bound = 5;
 	m_blocks.clear();
@@ -303,7 +303,7 @@ void ChunkManager::floodSearch( const int p, const int q, const int x, const int
 		{
 			auto durability = m_chunkMap[p][q]->cubes[x * 16 * 256 + z * 256 + y].durability;
 			m_blocks.push_back({ p,q,x,y,z,type,durability });
-			if (type < 1024) // it's not transparent, we stop here
+			if (type < 1024 && type != 6) // it's not transparent, we stop here
 			{
 				continue;
 			}
@@ -326,7 +326,7 @@ void ChunkManager::floodSearch( const int p, const int q, const int x, const int
 				if (abs(p - m_p) < fill_bound && abs(q - m_q) < fill_bound)
 				{
 					searchStack.push_back({ p, q, x, y - 1, z });
-					m_searched.insert({ p,q,x,y -1,z });
+					m_searched.insert({ p,q,x,y - 1,z });
 				}
 			}
 		}
@@ -337,7 +337,7 @@ void ChunkManager::floodSearch( const int p, const int q, const int x, const int
 				if (abs(p - m_p) < fill_bound && abs(q - m_q) < fill_bound)
 				{
 					searchStack.push_back({ p, q, x - 1, y, z });
-					m_searched.insert({ p,q,x-1,y,z });
+					m_searched.insert({ p,q,x - 1,y,z });
 				}
 			}
 		}
@@ -345,10 +345,10 @@ void ChunkManager::floodSearch( const int p, const int q, const int x, const int
 		{
 			if (m_searched.find({ p - 1, q, 15, y, z }) == m_searched.end())
 			{
-				if (abs(p-1 - m_p) < fill_bound && abs(q - m_q) < fill_bound)
+				if (abs(p - 1 - m_p) < fill_bound && abs(q - m_q) < fill_bound)
 				{
 					searchStack.push_back({ p - 1, q, 15, y, z });
-					m_searched.insert({ p-1,q,15,y,z });
+					m_searched.insert({ p - 1,q,15,y,z });
 				}
 
 			}
@@ -360,7 +360,7 @@ void ChunkManager::floodSearch( const int p, const int q, const int x, const int
 				if (abs(p - m_p) < fill_bound && abs(q - m_q) < fill_bound)
 				{
 					searchStack.push_back({ p, q, x + 1, y, z });
-					m_searched.insert({ p,q,x+1,y,z });
+					m_searched.insert({ p,q,x + 1,y,z });
 				}
 			}
 		}
@@ -368,10 +368,10 @@ void ChunkManager::floodSearch( const int p, const int q, const int x, const int
 		{
 			if (m_searched.find({ p + 1, q, 0, y, z }) == m_searched.end())
 			{
-				if (abs(p+1 - m_p) < fill_bound && abs(q - m_q) < fill_bound)
+				if (abs(p + 1 - m_p) < fill_bound && abs(q - m_q) < fill_bound)
 				{
 					searchStack.push_back({ p + 1, q, 0, y, z });
-					m_searched.insert({ p+1,q,0,y,z });
+					m_searched.insert({ p + 1,q,0,y,z });
 				}
 			}
 		}
@@ -382,7 +382,7 @@ void ChunkManager::floodSearch( const int p, const int q, const int x, const int
 				if (abs(p - m_p) < fill_bound && abs(q - m_q) < fill_bound)
 				{
 					searchStack.push_back({ p, q, x, y, z + 1 });
-					m_searched.insert({ p,q,x,y,z+1 });
+					m_searched.insert({ p,q,x,y,z + 1 });
 				}
 			}
 		}
@@ -390,10 +390,10 @@ void ChunkManager::floodSearch( const int p, const int q, const int x, const int
 		{
 			if (m_searched.find({ p, q + 1, x, y, 0 }) == m_searched.end())
 			{
-				if (abs(p - m_p) < fill_bound && abs(q+1 - m_q) < fill_bound)
+				if (abs(p - m_p) < fill_bound && abs(q + 1 - m_q) < fill_bound)
 				{
 					searchStack.push_back({ p, q + 1, x, y, 0 });
-					m_searched.insert({ p,q+1,x,y,0 });
+					m_searched.insert({ p,q + 1,x,y,0 });
 				}
 			}
 		}
@@ -404,18 +404,18 @@ void ChunkManager::floodSearch( const int p, const int q, const int x, const int
 				if (abs(p - m_p) < fill_bound && abs(q - m_q) < fill_bound)
 				{
 					searchStack.push_back({ p, q, x, y, z - 1 });
-					m_searched.insert({ p,q,x,y,z-1 });
+					m_searched.insert({ p,q,x,y,z - 1 });
 				}
 			}
 		}
 		else
 		{
-			if (m_searched.find({ p, q-1, x, y, 15 }) == m_searched.end())
+			if (m_searched.find({ p, q - 1, x, y, 15 }) == m_searched.end())
 			{
-				if (abs(p - m_p) < fill_bound && abs(q -1- m_q) < fill_bound)
+				if (abs(p - m_p) < fill_bound && abs(q - 1 - m_q) < fill_bound)
 				{
-					searchStack.push_back({ p, q-1, x, y, 15 });
-					m_searched.insert({ p,q-1,x,y,15 });
+					searchStack.push_back({ p, q - 1, x, y, 15 });
+					m_searched.insert({ p,q - 1,x,y,15 });
 				}
 			}
 		}
@@ -435,7 +435,7 @@ std::shared_ptr<Chunk> ChunkManager::loadBasicChunk(const int32_t p, const int32
 		{
 			for (int z = 0; z < 16; z++)
 			{
-				res->cubes[x * 16 * 256 + z * 256 +0] = { x,0,z,1,0,0 };
+				res->cubes[x * 16 * 256 + z * 256 + 0] = { x,0,z,1,0,0 };
 			}
 		}
 		return res;
@@ -445,12 +445,34 @@ std::shared_ptr<Chunk> ChunkManager::loadBasicChunk(const int32_t p, const int32
 		for (int z = 0; z < 16; z++)
 		{
 			//auto y = 0;
-			auto y_max = abs(static_cast<int>(5 * glm::simplex(glm::vec4((p*4+x)*0.1, (q*4+z)*0.1, 0.4, 0.5))));
+			auto y_max = abs(static_cast<int>(5 * glm::simplex(glm::vec4((p * 4 + x)*0.1, (q * 4 + z)*0.1, 0.4, 0.5))));
 			//auto y_max = abs(static_cast<int>(4 * glm::perlin(glm::vec2((p * 10 + x)*0.1f, (q * 10 + z)*0.1f))));
 			//res->cubes[x * 16 * 256 + z * 256 - y_max + 128] = { x,- y_max,z,1,0,0 };
 			for (int y = 0; y < y_max; y++)
 			{
 				res->cubes[x * 16 * 256 + z * 256 + y] = { x,y,z,2,0,0 };
+			}
+
+			if (x > 4 && x < 8 && z>4 && z<8)
+			{
+				if (abs(static_cast<int>(8 * glm::perlin(glm::vec2((p * 10 + x)*0.2f, (q * 10 + z)*0.2f)))) == 0)
+				{
+					res->cubes[x * 16 * 256 + z * 256 + y_max+1] = { x,y_max+1,z,1026,0,0 };
+				}
+			}
+			else if (x > 8 && x < 11 && z>13 && z<16)
+			{
+				if (abs(static_cast<int>(8 * glm::perlin(glm::vec2((p * 10 + x)*0.2f, (q * 10 + z)*0.2f)))) == 0)
+				{
+					res->cubes[x * 16 * 256 + z * 256 + y_max + 1] = { x,y_max + 1,z,1027,0,0 };
+				}
+			}
+			else if (x != 8 && z != 8)
+			{
+				if (abs(static_cast<int>(8 * glm::perlin(glm::vec2((p * 10 + x)*0.2f, (q * 10 + z)*0.2f)))) == 4)
+				{
+					res->cubes[x * 16 * 256 + z * 256 + y_max + 1] = { x,y_max + 1,z,1028,0,0 };
+				}
 			}
 			if (x == 8 && z == 8)
 			{

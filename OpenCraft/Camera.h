@@ -4,9 +4,9 @@
 
 #include "ChunkManager.h"
 
-#include "glad.h"
-#include "ext/glm/glm.hpp"
-#include "ext/glm/gtc/matrix_transform.hpp"
+#include <glad.h>
+#include <ext/glm/glm.hpp>
+#include <ext/glm/gtc/matrix_transform.hpp>
 
 enum class CameraMovement
 {
@@ -39,6 +39,7 @@ public:
 
 	glm::mat4 getViewMatrix()const;
 
+	void switchMoveMode();
 	void jump();
 	void step(const float deltaTime, ChunkManager& chunkManager);
 	void processKeyboard(const CameraMovement direction, const float deltaTime,ChunkManager& chunkManager);

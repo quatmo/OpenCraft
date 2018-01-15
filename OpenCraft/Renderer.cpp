@@ -3,7 +3,7 @@
 #include <iostream>
 #include <memory>
 
-#include "ext/glm/gtc/matrix_transform.hpp"
+#include <ext/glm/gtc/matrix_transform.hpp>
 
 #include "TextureManager.h"
 #include "Renderer.h"
@@ -26,8 +26,14 @@ renderDispatcher =
 	{3,renderRedStoneBlock},
 	{4,renderOak},
 	{5,renderLeaf},
-	{1025,renderModel},
-	{1026,renderFlower}
+	{6,renderGlass},
+	{7,renderBrick},
+	{8,renderCraftTable},
+	{9,renderFurnace},
+	{10,renderQuartz},
+	{1026,renderPaeonia},
+	{1027,renderRose},
+	{1028,renderWheat}
 };
 
 
@@ -69,6 +75,7 @@ void Renderer::renderCubes(CubeType cubeType, const Shader shader, glm::mat4* mo
 
 	// never forget to release the resource
 	glDeleteBuffers(1, &instanceVBO);
+	glBindVertexArray(0);
 
 }
 
@@ -141,8 +148,6 @@ float cubeVertices[6 * 6 * 6] = {
 void renderBasicBlock(const Shader shader, const unsigned int VAO, const int instanceCount, const std::string name, const int durability)
 {
 	shader.use();
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
 	glBindVertexArray(VAO);
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
@@ -176,42 +181,50 @@ void renderBasicBlock(const Shader shader, const unsigned int VAO, const int ins
 	// never forget to release the resource
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDisable(GL_CULL_FACE);
 }
 
 
 void renderGrass(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
 {
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
 	renderBasicBlock(shader, VAO, instanceCount, "grass", durability);
+	glDisable(GL_CULL_FACE);
 }
 
 void renderDirt(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
 {
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
 	renderBasicBlock(shader, VAO, instanceCount, "dirt",durability);
+	glDisable(GL_CULL_FACE);
 }
 
 void renderRedStoneBlock(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
 {
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
 	renderBasicBlock(shader, VAO, instanceCount, "red_stone_block", durability);
+	glDisable(GL_CULL_FACE);
 }
 
 void renderOak(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
 {
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
 	renderBasicBlock(shader, VAO, instanceCount, "oak", durability);
+	glDisable(GL_CULL_FACE);
 }
 
 void renderLeaf(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
 {
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
 	renderBasicBlock(shader, VAO, instanceCount, "leaf", durability);
+	glDisable(GL_CULL_FACE);
 }
 
-void renderModel(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
-{
-
-}
-
-
-float flowerVertices[6*8] = {
+float flowerVertices[6 * 8] = {
 	// positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
 	0.0f, -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,   1.0f,  1.0f,
 	0.0f, -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,   0.0f,  1.0f,
@@ -222,11 +235,9 @@ float flowerVertices[6*8] = {
 	0.0f, 1.0f,  1.0f,  0.0f,  1.0f,  0.0f,   1.0f,  0.0f
 };
 
-void renderFlower(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+void renderFlower(const Shader shader, const unsigned int VAO, const int instanceCount, const std::string name, const int durability)
 {
-	//std::cerr << "render flower" << std::endl;
 	shader.use();
-	//glEnable(GL_DEPTH_TEST);
 	glBindVertexArray(VAO);
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
@@ -239,8 +250,8 @@ void renderFlower(const Shader shader, const unsigned int VAO, const int instanc
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(4 * sizeof(float)));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, TextureManager::getFaceTexture("flower"));
-	glDrawArraysInstanced(GL_TRIANGLES, 0,6, instanceCount);
+	glBindTexture(GL_TEXTURE_2D, TextureManager::getFaceTexture(name));
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, instanceCount);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
@@ -252,6 +263,55 @@ void renderFlower(const Shader shader, const unsigned int VAO, const int instanc
 	// never forget to release the resource
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
+}
+
+
+
+
+void renderPaeonia(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	renderFlower(shader, VAO, instanceCount, "paeonia", durability);
+}
+
+void renderRose(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	renderFlower(shader, VAO, instanceCount, "rose", durability);
+}
+
+void renderWheat(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	renderFlower(shader, VAO, instanceCount, "wheat", durability);
+}
+
+void renderGlass(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	renderBasicBlock(shader, VAO, instanceCount, "glass", durability);
+	glDisable(GL_BLEND);
+}
+
+void renderBrick(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "brick", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+void renderCraftTable(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	renderBasicBlock(shader, VAO, instanceCount, "craft_table", durability);
+}
+
+void renderFurnace(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	renderBasicBlock(shader, VAO, instanceCount, "furnace", durability);
+}
+
+void renderQuartz(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	renderBasicBlock(shader, VAO, instanceCount, "quartz", durability);
 }
 
 

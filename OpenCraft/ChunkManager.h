@@ -9,7 +9,7 @@
 #include <memory>
 #include <mutex>
 
-#include "ext/glm/glm.hpp"
+#include <ext/glm/glm.hpp>
 #include "Chunk.h"
 #include "DBManager.h"
 
