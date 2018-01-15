@@ -212,6 +212,10 @@ void ChunkManager::tryDestoryCube(const glm::vec3 cameraPos, const glm::vec3 fro
 			{
 				chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].type = 0;
 				chunk->cubes[probeX * 16 * 256 + probeZ * 256 + probeY].durability = 0;
+				if (type == 17)
+				{
+					m_pointLightPos.erase({ std::get<0>(realPosToProbe),std::get<1>(realPosToProbe),probeX,probeY,probeZ });
+				}
 				m_modified = true;
 			}
 			else
@@ -270,9 +274,18 @@ void ChunkManager::tryPlaceCube(const glm::vec3 cameraPos, const glm::vec3 front
 		auto placeY = std::get<3>(realPosToPlace);
 		auto placeZ = std::get<4>(realPosToPlace);
 		chunk->cubes[placeX * 16 * 256 + placeZ * 256 + placeY].type = cubeType;
+		if (cubeType == 17)
+		{
+			m_pointLightPos.insert({ std::get<0>(realPosToPlace),std::get<1>(realPosToPlace),placeX,placeY,placeZ});
+		}
 		m_blocks.push_back({ std::get<0>(realPosToPlace) ,std::get<1>(realPosToPlace),placeX,placeY,placeZ,cubeType,0 });
 	}
 
+}
+
+std::set<std::tuple<int, int, int, int, int>> ChunkManager::getLightPos(void) const
+{
+	return m_pointLightPos;
 }
 
 ChunkManager::~ChunkManager()
@@ -303,7 +316,7 @@ void ChunkManager::floodSearch(const int p, const int q, const int x, const int 
 		{
 			auto durability = m_chunkMap[p][q]->cubes[x * 16 * 256 + z * 256 + y].durability;
 			m_blocks.push_back({ p,q,x,y,z,type,durability });
-			if (type < 1024 && type != 6) // it's not transparent, we stop here
+			if (type < 1024 && type != 6 && type != 17) // it's not transparent, we stop here
 			{
 				continue;
 			}

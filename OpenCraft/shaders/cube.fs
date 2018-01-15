@@ -49,7 +49,7 @@ in vec4 FragPosLightSpace;
 
 uniform vec3 viewPos;
 uniform DirLight dirLight;
-uniform PointLight pointLight;
+uniform PointLight pointLight[4];
 uniform SpotLight spotLight;
 
 // function prototypes
@@ -79,10 +79,26 @@ void main()
     }
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 result = CalcDirLight(dirLight, norm, viewDir);
-    //result += CalcPointLight(pointLight, norm, FragPos, viewDir);    
+
+    if(pointLight[0].constant > 0.9 && pointLight[0].constant < 1.1)
+    {
+            result += CalcPointLight(pointLight[0], norm, FragPos, viewDir);
+    }
+    if(pointLight[1].constant > 0.9 && pointLight[1].constant < 1.1)
+    {
+            result += CalcPointLight(pointLight[1], norm, FragPos, viewDir);
+    }
+    if(pointLight[2].constant > 0.9 && pointLight[2].constant < 1.1)
+    {
+        result += CalcPointLight(pointLight[2], norm, FragPos, viewDir);
+    }
+    if(pointLight[3].constant > 0.9 && pointLight[3].constant < 1.1)
+    {
+        result += CalcPointLight(pointLight[3], norm, FragPos, viewDir);
+    }
     result += CalcSpotLight(spotLight, norm, FragPos, viewDir);   
     //FragColor = vec4(result,1.0);
-    FragColor = mix(vec4(0.6, 0.6, 0.6, texColor.a),vec4(result,texColor.a),min(8.0/length(spotLight.position - FragPos),1.0));  
+    FragColor = mix(dirLight.diffuse.x*vec4(0.6, 0.6, 0.6, texColor.a),vec4(result,texColor.a),min(8.0/length(spotLight.position - FragPos),1.0));  
 }
 
 
@@ -122,8 +138,8 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     ambient *= attenuation;
     diffuse *= attenuation;
     specular *= attenuation;
-    return (ambient + (1.0 - shadow) * (diffuse + specular));
-    //return (ambient + diffuse + specular);
+    //return (ambient + (1.0 - shadow) * (diffuse + specular));
+    return (ambient + diffuse + specular);
 }
 
 

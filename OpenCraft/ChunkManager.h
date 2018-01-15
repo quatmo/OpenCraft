@@ -19,8 +19,8 @@ class ChunkManager
 public:
 	ChunkManager(const glm::vec3 cameraPos);
 
-	std::array<std::shared_ptr<Chunk>,5*5> getChunks(int *);
-	const std::list<RanderUnit>& getRenderUnit(int*,const glm::vec3);
+	std::array<std::shared_ptr<Chunk>, 5 * 5> getChunks(int *);
+	const std::list<RanderUnit>& getRenderUnit(int*, const glm::vec3);
 	std::tuple<int, int, int, int, int> calRealPos(const glm::vec3 worldPos)const;
 	glm::vec3 calWorldPos(const int p, const int q, const int x, const int y, const int z)const;
 	float calFloorDistance(const glm::vec3 pos);
@@ -28,7 +28,8 @@ public:
 	bool hitDetection(const glm::vec3 pos);
 	void updateChunks(const glm::vec3 cameraPos);
 	void tryDestoryCube(const glm::vec3 cameraPos, const glm::vec3 frontVec3);
-	void tryPlaceCube(const glm::vec3 cameraPos, const glm::vec3 frontVec3,const CubeType cubeType);
+	void tryPlaceCube(const glm::vec3 cameraPos, const glm::vec3 frontVec3, const CubeType cubeType);
+	std::set<std::tuple<int, int, int, int, int>> getLightPos(void)const;
 
 
 	ChunkManager& operator=(const ChunkManager&) = delete;
@@ -43,10 +44,11 @@ private:
 	bool m_modified;
 	bool m_subtleModified;
 	void floodSearch(const int p, const int q, const int x, const int y, const int z);
-	std::unordered_map<int32_t,std::unordered_map<int32_t,std::shared_ptr<Chunk>>> m_chunkMap;
+	std::unordered_map<int32_t, std::unordered_map<int32_t, std::shared_ptr<Chunk>>> m_chunkMap;
 	std::set<std::pair<int, int>> m_chunkSet;
 	std::list<RanderUnit> m_blocks;
-	std::set<std::tuple<int, int,int,int,int>> m_searched;
+	std::set<std::tuple<int, int, int, int, int>> m_searched;
+	std::set<std::tuple<int, int, int, int, int>> m_pointLightPos;
 	std::set<std::pair<int, int>> m_searchedPQ;
 	std::shared_ptr<Chunk> loadBasicChunk(const int32_t p, const int32_t q);
 

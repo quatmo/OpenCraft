@@ -79,6 +79,8 @@ private:
 	static int m_handMoveStage;
 	static glm::vec3 m_sunPos;
 	static glm::vec3 m_pointLight;
+	static glm::vec3 m_dirLightDiff;
+	static glm::vec3 m_dirLightSpec;
 	static glm::mat4 m_sunModel;
 
 	// basic facility collections

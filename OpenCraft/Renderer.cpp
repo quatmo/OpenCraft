@@ -17,7 +17,7 @@ std::unordered_map<std::string, Model> modelMap;
 // 1025~999999 for transparent blocks
 
 unordered_map < CubeType,
-	function<void(const Shader, const unsigned int, const int,const int)>
+	function<void(const Shader, const unsigned int, const int, const int)>
 >
 renderDispatcher =
 {
@@ -31,9 +31,16 @@ renderDispatcher =
 	{8,renderCraftTable},
 	{9,renderFurnace},
 	{10,renderQuartz},
+	{11,renderMossyStone},
+	{12,renderDiamond},
+	{13,renderGlowStone},
+	{14,renderPlanks},
+	{15,renderWool},
+	{16,render2D},
 	{1026,renderPaeonia},
 	{1027,renderRose},
-	{1028,renderWheat}
+	{1028,renderWheat},
+	{17,renderTorch }
 };
 
 
@@ -66,11 +73,11 @@ void Renderer::renderCubes(CubeType cubeType, const Shader shader, glm::mat4* mo
 	glVertexAttribDivisor(6, 1);
 	if (cubeType / 1000000 == 0)
 	{
-		renderDispatcher[cubeType](shader, VAO, instanceCount, cubeType/1000000); // render it
+		renderDispatcher[cubeType](shader, VAO, instanceCount, cubeType / 1000000); // render it
 	}
 	else
 	{
-		renderDispatcher[cubeType%1000000](shader, VAO, instanceCount, cubeType / 1000000); // render it
+		renderDispatcher[cubeType % 1000000](shader, VAO, instanceCount, cubeType / 1000000); // render it
 	}
 
 	// never forget to release the resource
@@ -87,11 +94,11 @@ void Renderer::renderModel(Shader shader, glm::mat4 * models, const int instance
 	}
 	glm::mat4 model;
 	model = glm::translate(model, glm::vec3(0.0f, -1.00f, 0.0f));
-	model = glm::scale(model,glm::vec3(1.0f));
+	model = glm::scale(model, glm::vec3(1.0f));
 	shader.use();
 	for (int i = 0; i < instanceCount; i++)
 	{
-		shader.setMat4("model", models[i]*model);
+		shader.setMat4("model", models[i] * model);
 		modelMap.at("sun").draw(shader);	// draw scene as normal
 	}
 }
@@ -121,7 +128,7 @@ float cubeVertices[6 * 6 * 6] = {
 	-1.0f, 1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
 	-1.0f, 1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
 	-1.0f, -1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
-	-1.0f,  -1.0f, - 1.0f, -1.0f,  0.0f,  0.0f,
+	-1.0f,  -1.0f, -1.0f, -1.0f,  0.0f,  0.0f,
 
 	1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f,
 	1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f,
@@ -161,7 +168,7 @@ void renderBasicBlock(const Shader shader, const unsigned int VAO, const int ins
 
 	shader.setInt("texture1", 0);
 	shader.setInt("durabilityTexture", 1);
-	
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture(name));
 	if (durability == 0)
@@ -173,7 +180,7 @@ void renderBasicBlock(const Shader shader, const unsigned int VAO, const int ins
 	else
 	{
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture("destroy_stage_"+std::to_string(durability)));
+		glBindTexture(GL_TEXTURE_CUBE_MAP, TextureManager::getCubeTexture("destroy_stage_" + std::to_string(durability)));
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, instanceCount);
 	}
 
@@ -196,7 +203,7 @@ void renderDirt(const Shader shader, const unsigned int VAO, const int instanceC
 {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
-	renderBasicBlock(shader, VAO, instanceCount, "dirt",durability);
+	renderBasicBlock(shader, VAO, instanceCount, "dirt", durability);
 	glDisable(GL_CULL_FACE);
 }
 
@@ -281,6 +288,108 @@ void renderRose(const Shader shader, const unsigned int VAO, const int instanceC
 void renderWheat(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
 {
 	renderFlower(shader, VAO, instanceCount, "wheat", durability);
+}
+
+void renderMossyStone(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "mossyStone", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+void renderDiamond(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "diamond", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+void renderGlowStone(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "glowStone", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+void renderPlanks(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "planks", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+void renderWool(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "wool", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+void render2D(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "2d", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+
+//float torchVertices[6 * 6 * 6] = {
+//	// positions          // normals          
+//	-0.25f, -1.0f, -0.25f,  0.0f,  0.0f, -1.0f,
+//	0.25f, -1.0f, -0.25f,  0.0f,  0.0f, -1.0f,
+//	0.25f, 1.0f, -0.25f,  0.0f,  0.0f, -1.0f,
+//	0.25f, 1.0f, -0.25f,  0.0f,  0.0f, -1.0f,
+//	-0.25f, 1.0f, -0.25f,  0.0f,  0.0f, -1.0f,
+//	-0.25f, -1.0f, -0.25f,  0.0f,  0.0f, -1.0f,
+//
+//	0.25f, 1.0f,  0.25f,  0.0f,  0.0f,  1.0f,
+//	0.25f, -1.0f,  0.25f,  0.0f,  0.0f,  1.0f,
+//	-0.25f,  -1.0f,  0.25f,  0.0f,  0.0f,  1.0f,
+//	-0.25f,  -1.0f,  0.25f,  0.0f,  0.0f,  1.0f,
+//	-0.25f,  1.0f,  0.25f,  0.0f,  0.0f,  1.0f,
+//	0.25f, 1.0f,  0.25f,  0.0f,  0.0f,  1.0f,
+//
+//	-0.25f,  -1.0f,-0.25f, -1.0f,  0.0f,  0.0f,
+//	-0.25f,  1.0f, -0.25f, -1.0f,  0.0f,  0.0f,
+//	-0.25f, 1.0f, 0.25f, -1.0f,  0.0f,  0.0f,
+//	-0.25f, 1.0f, 0.25f, -1.0f,  0.0f,  0.0f,
+//	-0.25f, -1.0f, 0.25f, -1.0f,  0.0f,  0.0f,
+//	-0.25f,  -1.0f, -0.25f, -1.0f,  0.0f,  0.0f,
+//
+//	0.25f,  1.0f,  0.25f,  1.0f,  0.0f,  0.0f,
+//	0.25f,  1.0f, -0.25f,  1.0f,  0.0f,  0.0f,
+//	0.25f, -1.0f, -0.25f,  1.0f,  0.0f,  0.0f,
+//	0.25f, -1.0f, -0.25f,  1.0f,  0.0f,  0.0f,
+//	0.25f, -1.0f,  0.25f,  1.0f,  0.0f,  0.0f,
+//	0.25f,  1.0f,  0.25f,  1.0f,  0.0f,  0.0f,
+//
+//	0.25f, -1.0f, 0.25f,  0.0f, -1.0f,  0.0f,
+//	0.25f, -1.0f,  -0.25f,  0.0f, -1.0f,  0.0f,
+//	-0.25f, -1.0f, -0.25f,  0.0f, -1.0f,  0.0f,
+//	-0.25f, -1.0f, -0.25f,  0.0f, -1.0f,  0.0f,
+//	-0.25f, -1.0f,0.25f,  0.0f, -1.0f,  0.0f,
+//	0.25f, -1.0f, 0.25f,  0.0f, -1.0f,  0.0f,
+//
+//	-0.25f,  1.0f, -0.25f,  0.0f,  1.0f,  0.0f,
+//	0.25f,  1.0f, -0.25f,  0.0f,  1.0f,  0.0f,
+//	0.25f,  1.0f,  0.25f,  0.0f,  1.0f,  0.0f,
+//	0.25f,  1.0f,  0.25f,  0.0f,  1.0f,  0.0f,
+//	-0.25f,  1.0f,  0.25f,  0.0f,  1.0f,  0.0f,
+//	-0.25f,  1.0f, -0.25f,  0.0f,  1.0f,  0.0f
+//};
+
+void renderTorch(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "torch", durability);
+	glDisable(GL_CULL_FACE);
 }
 
 void renderGlass(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)

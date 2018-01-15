@@ -16,7 +16,9 @@ float OpenCraft::m_lastY = 0.0;
 CubeType OpenCraft::m_blockOnHand = 2;
 int OpenCraft::m_handMoveStage = 0;
 glm::vec3 OpenCraft::m_sunPos(3.5f, -4.0f, 5.0f);
-glm::vec3 OpenCraft::m_pointLight(1.0f,1.0f,1.0f);
+glm::vec3 OpenCraft::m_pointLight(1.0f, 1.0f, 1.0f);
+glm::vec3 OpenCraft::m_dirLightDiff(0.9f);
+glm::vec3 OpenCraft::m_dirLightSpec(1.0f);
 glm::mat4 OpenCraft::m_sunModel;
 
 
@@ -110,7 +112,7 @@ void OpenCraft::initShaders(void)
 	m_shaderMap.emplace("model", Shader("./shaders/model.vs", "./shaders/model.fs"));
 	m_shaderMap.emplace("debugDepth", Shader("./shaders/debugDepth.vs", "./shaders/debugDepth.fs"));
 	m_shaderMap.emplace("text", Shader("./shaders/text.vs", "./shaders/text.fs"));
-	
+
 }
 
 void OpenCraft::initItems(void)
@@ -130,7 +132,7 @@ void OpenCraft::initText(void)
 	FT_Library ft;
 	if (FT_Init_FreeType(&ft))
 	{
-		std::cerr<< "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+		std::cerr << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
 	}
 	FT_Face face;
 	if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face))
@@ -143,14 +145,14 @@ void OpenCraft::initText(void)
 	{
 		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
 		{
-			std::cerr<< "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+			std::cerr << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
 			continue;
 		}
 		GLuint texture;
 		glGenTextures(1, &texture);
 		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexImage2D(GL_TEXTURE_2D,0,GL_RED,face->glyph->bitmap.width,face->glyph->bitmap.rows,
-			0,GL_RED,GL_UNSIGNED_BYTE,face->glyph->bitmap.buffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, face->glyph->bitmap.width, face->glyph->bitmap.rows,
+			0, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -159,7 +161,7 @@ void OpenCraft::initText(void)
 			texture,
 			glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
 			glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-			face->glyph->advance.x
+			static_cast<GLuint>(face->glyph->advance.x)
 		};
 		m_characters.insert(std::pair<GLchar, Character>(c, character));
 	}
@@ -184,7 +186,7 @@ void OpenCraft::startRenderLoop(void)
 	{
 		// per-frame time logic
 		updateTime();
-		m_camera.step(m_deltaTime,m_chunkManager);
+		m_camera.step(m_deltaTime, m_chunkManager);
 		m_chunkManager.updateChunks(m_camera.getPosition());
 
 		// input
@@ -199,13 +201,13 @@ void OpenCraft::startRenderLoop(void)
 
 		//renderSkyBox();
 		//renderModel();
-		
+
 		renderBlocks();
 		renderCrossair();
 		renderHand();
 		renderText();
-		
-		
+
+
 		// final works
 		glfwSwapBuffers(m_window);
 		glfwPollEvents();
@@ -226,7 +228,7 @@ void OpenCraft::processInput(void)
 	if (glfwGetKey(m_window, GLFW_KEY_2) == GLFW_PRESS)
 	{
 		m_handMoveStage = 16;
-		m_blockOnHand = 2;
+		m_blockOnHand = 17;
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_3) == GLFW_PRESS)
 	{
@@ -270,15 +272,15 @@ void OpenCraft::processInput(void)
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_PRESS)
 	{
-		if (m_blockOnHand > 1 && m_blockOnHand <= 10 && m_handMoveStage == 0)
+		if (m_blockOnHand > 1 && m_blockOnHand <= 17 && m_handMoveStage == 0)
 		{
 			m_handMoveStage = 16;
 			m_blockOnHand -= 1;
 		}
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_PRESS)
-	{	
-		if (m_blockOnHand >= 1 && m_blockOnHand < 10 && m_handMoveStage == 0)
+	{
+		if (m_blockOnHand >= 1 && m_blockOnHand < 17 && m_handMoveStage == 0)
 		{
 			m_handMoveStage = 16;
 			m_blockOnHand += 1;
@@ -306,26 +308,51 @@ void OpenCraft::processInput(void)
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_R) == GLFW_PRESS)
 	{
-		m_sunModel = glm::rotate(m_sunModel,2*3.14f/180,glm::vec3(0.0, 1.0, 0.0));
-		m_sunPos = glm::vec3(m_sunModel*glm::vec4(3.5f,-4.0f,5.0f,1.0f));
+		m_sunModel = glm::rotate(m_sunModel, 2 * 3.14f / 180, glm::vec3(0.0, 1.0, 0.0));
+		m_sunPos = glm::vec3(m_sunModel*glm::vec4(3.5f, -4.0f, 5.0f, 1.0f));
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_T) == GLFW_PRESS)
 	{
 		m_sunPos = glm::vec3(3.5f, -4.0f, 5.0f);
 		m_sunModel = glm::mat4();
 	}
+	if (glfwGetKey(m_window, GLFW_KEY_J) == GLFW_PRESS)
+	{
+		m_dirLightDiff += glm::vec3(0.05f);
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_K) == GLFW_PRESS)
+	{
+		m_dirLightDiff -= glm::vec3(0.05f);
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_U) == GLFW_PRESS)
+	{
+		m_dirLightSpec += glm::vec3(0.05f);
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_I) == GLFW_PRESS)
+	{
+		m_dirLightSpec -= glm::vec3(0.05f);
+	}
 
 	if (glfwGetKey(m_window, GLFW_KEY_SPACE) == GLFW_PRESS)
 	{
 		m_camera.jump();
 	}
+	static bool F1_firstPressed = true;
 	if (glfwGetKey(m_window, GLFW_KEY_F1) == GLFW_PRESS)
 	{
-		m_camera.switchMoveMode();
+		if (F1_firstPressed == true)
+		{
+			F1_firstPressed = false;
+			m_camera.switchMoveMode();
+		}
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_F1) == GLFW_RELEASE)
+	{
+		F1_firstPressed = true;
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		m_camera.processKeyboard(CameraMovement::FORWARD, m_deltaTime,m_chunkManager);
+		m_camera.processKeyboard(CameraMovement::FORWARD, m_deltaTime, m_chunkManager);
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
 	{
@@ -368,6 +395,7 @@ void OpenCraft::renderSkyBox(void)
 	skyboxShader.setMat4("model", m_sunModel);
 	skyboxShader.setMat4("view", view);
 	skyboxShader.setMat4("projection", projection);
+	skyboxShader.setVec3("strength", m_dirLightDiff);
 	m_itemMap.at("skybox")->draw(skyboxShader);
 }
 
@@ -410,11 +438,11 @@ void OpenCraft::renderTestBlock(void)
 	auto blockShader = m_shaderMap.at("cube");
 	glm::mat4 view = m_camera.getViewMatrix();
 	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 20.0f);
-	
+
 	flowerShader.use();
 	flowerShader.setMat4("view", view);
 	flowerShader.setMat4("projection", projection);
-	
+
 	blockShader.use();
 	blockShader.setMat4("view", view);
 	blockShader.setMat4("projection", projection);
@@ -475,12 +503,12 @@ void OpenCraft::renderTestBlock(void)
 							glm::mat4 model;
 							model = glm::translate(model, glm::vec3(chunk->p * 4, 0, chunk->q * 4));
 							model = glm::translate(model, glm::vec3(x*0.25, y*0.25, z*0.25));
-							model = glm::translate(model, glm::vec3(0.125, 0.125,0.125));
+							model = glm::translate(model, glm::vec3(0.125, 0.125, 0.125));
 							model = glm::scale(model, glm::vec3(0.125f));
 							if (chunk->cubes[x * 256 * 16 + z * 256 + y].durability != 0)
 							{
 								auto durability = chunk->cubes[x * 256 * 16 + z * 256 + y].durability;
-								cubeModelMatlMap[chunk->cubes[x * 256 * 16 + z * 256 + y].type+1000000*durability].push_back(model);
+								cubeModelMatlMap[chunk->cubes[x * 256 * 16 + z * 256 + y].type + 1000000 * durability].push_back(model);
 							}
 							else
 							{
@@ -508,7 +536,7 @@ void OpenCraft::renderTestBlock(void)
 	// render depthMap
 
 	//Render depth map
-	
+
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	const glm::vec3 lightPos(-3.5f, 4.0f, -5.0f);
@@ -537,8 +565,8 @@ void OpenCraft::renderTestBlock(void)
 		}
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	
-	
+
+
 	//auto debugDepthQuad = m_shaderMap.at("debugDepth");
 	//debugDepthQuad.use();
 	//debugDepthQuad.setInt("depthMap", 0);
@@ -547,9 +575,9 @@ void OpenCraft::renderTestBlock(void)
 	//glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, depthMap);
 	//renderQuad();
-	
+
 	// 2. then render scene as normal with shadow mapping (using depth map)
-	
+
 	glViewport(0, 0, DEFAULT_SCR_WIDTH, DEFAULT_SCR_HEIGHT);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	blockShader.use();
@@ -601,8 +629,8 @@ void OpenCraft::renderBlocks(void)
 	//blockShader.setVec3("dirLight.direction", 0.0f, 1.0f, -1.0f);
 	blockShader.setVec3("dirLight.direction", m_sunPos.x, m_sunPos.y, m_sunPos.z);
 	blockShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
-	blockShader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 0.8f);
-	blockShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
+	blockShader.setVec3("dirLight.diffuse", m_dirLightDiff.x, m_dirLightDiff.y, m_dirLightDiff.z);
+	blockShader.setVec3("dirLight.specular", m_dirLightSpec.x, m_dirLightSpec.y, m_dirLightSpec.z);
 
 	blockShader.setVec3("spotLight.position", m_camera.getPosition());
 	blockShader.setVec3("spotLight.direction", m_camera.getFront());
@@ -615,6 +643,26 @@ void OpenCraft::renderBlocks(void)
 	blockShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
 	blockShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
+
+	const auto& pointLightPos = m_chunkManager.getLightPos();
+	int lightCounter = 0;
+	for (auto pos : pointLightPos)
+	{
+		auto worldPos = m_chunkManager.calWorldPos(std::get<0>(pos), std::get<1>(pos),
+			std::get<2>(pos), std::get<3>(pos), std::get<4>(pos));
+		blockShader.setVec3("pointLight[" + std::to_string(lightCounter) + "].position", worldPos.x, worldPos.y+0.125f, worldPos.z);
+		blockShader.setVec3("pointLight[" + std::to_string(lightCounter) + "].ambient", 0.05f, 0.05f, 0.05f);
+		blockShader.setVec3("pointLight[" + std::to_string(lightCounter) + "].diffuse", 0.8f, 0.4f, 0.0f);
+		blockShader.setVec3("pointLight[" + std::to_string(lightCounter) + "].specular", 0.4f, 0.2f, 0.0f);
+		blockShader.setFloat("pointLight[" + std::to_string(lightCounter) + "].constant", 1.0f);
+		blockShader.setFloat("pointLight[" + std::to_string(lightCounter) + "].linear", 0.7f);
+		blockShader.setFloat("pointLight[" + std::to_string(lightCounter) + "].quadratic", 1.8f);
+		lightCounter++;
+		if (lightCounter >= 4)
+		{
+			break;
+		}
+	}
 	int index = 0;
 	int chunkCount = 0;
 	int updated = 0;
@@ -628,10 +676,14 @@ void OpenCraft::renderBlocks(void)
 		for (auto renderUnit : renderUnits)
 		{
 			glm::mat4 model;
-			model = glm::translate(model, glm::vec3(renderUnit.p * 4, 0, renderUnit.q* 4));
+			model = glm::translate(model, glm::vec3(renderUnit.p * 4, 0, renderUnit.q * 4));
 			model = glm::translate(model, glm::vec3(renderUnit.x*0.25, renderUnit.y*0.25, renderUnit.z*0.25));
 			model = glm::translate(model, glm::vec3(0.125, 0.125, 0.125));
 			model = glm::scale(model, glm::vec3(0.125f));
+			if (renderUnit.type == 17)
+			{
+				model = glm::scale(model, glm::vec3(0.25f, 1.0f, 0.25f));
+			}
 			if (renderUnit.durability != 0)
 			{
 				cubeModelMatlMap[renderUnit.type + 1000000 * renderUnit.durability].push_back(model);
@@ -721,8 +773,8 @@ void OpenCraft::renderBlocks(void)
 		{
 			modelShader.use();
 			modelShader.setMat4("view", view);
-			modelShader.setMat4("projection",projection);
-			m_renderer.renderModel(modelShader,models+start,instanceCount);
+			modelShader.setMat4("projection", projection);
+			m_renderer.renderModel(modelShader, models + start, instanceCount);
 		}
 		else if ((cubeType % 1000000) < 1024)
 		{
@@ -736,7 +788,7 @@ void OpenCraft::renderBlocks(void)
 	renderSkyBox();
 	if (glassFlag == true)
 	{
-		m_renderer.renderCubes(6,blockShader,models+glassIndex,glassCount);
+		m_renderer.renderCubes(6, blockShader, models + glassIndex, glassCount);
 	}
 }
 
@@ -762,11 +814,11 @@ void OpenCraft::renderHand(void)
 	glm::mat4 view;
 	glm::mat4 projection = glm::perspective(glm::radians(m_camera.getZoom()), (float)m_screenWidth / (float)m_screenHeight, 0.1f, 20.0f);
 	blockShader.use();
-	
+
 	if (m_handMoveStage != 0)
 	{
 		m_handMoveStage -= 1;
-		view = glm::rotate(view, (0.1f/16)*m_handMoveStage, glm::vec3(1.0f, 1.0f, 1.0f));
+		view = glm::rotate(view, (0.1f / 16)*m_handMoveStage, glm::vec3(1.0f, 1.0f, 1.0f));
 	}
 	//(-1.0f, 1.5f,1.0f));
 	blockShader.setMat4("view", view);
@@ -855,10 +907,10 @@ void OpenCraft::renderTextHelper(Shader& shader, std::string text, GLfloat x, GL
 		};
 		glBindTexture(GL_TEXTURE_2D, ch.TextureID);
 		glBindBuffer(GL_ARRAY_BUFFER, m_characterVBO);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); 
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		x += (ch.Advance >> 6) * scale; 
+		x += (ch.Advance >> 6) * scale;
 	}
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -902,7 +954,7 @@ void OpenCraft::mouse_button_callback(GLFWwindow * window, int button, int actio
 		case GLFW_MOUSE_BUTTON_MIDDLE:
 			break;
 		case GLFW_MOUSE_BUTTON_RIGHT:
-			m_chunkManager.tryPlaceCube(m_camera.getPosition(), m_camera.getFront(),m_blockOnHand);
+			m_chunkManager.tryPlaceCube(m_camera.getPosition(), m_camera.getFront(), m_blockOnHand);
 			break;
 		default:
 			break;
