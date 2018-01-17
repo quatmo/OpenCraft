@@ -47,6 +47,10 @@ public:
 	friend void renderGlowStone(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability);
 	friend void renderPlanks(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability);
 	friend void renderWool(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability);
+	friend void renderBlackWool(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability);
+	friend void renderWhiteWool(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability);
+	friend void renderYellowWool(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability);
+	friend void renderRedWool(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability);
 	friend void render2D(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability);
 	friend void renderTorch(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability);
 private:

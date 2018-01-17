@@ -41,6 +41,8 @@ private:
 	const int FLOOD_SEARCH_DEPTH = 10000;
 	DBManager m_db;
 	int32_t m_p, m_q;
+	unsigned char* m_data;
+	int m_width, m_height, m_nrComponents;
 	bool m_modified;
 	bool m_subtleModified;
 	void floodSearch(const int p, const int q, const int x, const int y, const int z);

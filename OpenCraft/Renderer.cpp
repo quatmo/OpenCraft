@@ -37,6 +37,10 @@ renderDispatcher =
 	{14,renderPlanks},
 	{15,renderWool},
 	{16,render2D},
+	{18,renderBlackWool},
+	{19,renderWhiteWool},
+	{20,renderYellowWool},
+	{21,renderRedWool},
 	{1026,renderPaeonia},
 	{1027,renderRose},
 	{1028,renderWheat},
@@ -88,18 +92,18 @@ void Renderer::renderCubes(CubeType cubeType, const Shader shader, glm::mat4* mo
 
 void Renderer::renderModel(Shader shader, glm::mat4 * models, const int instanceCount)
 {
-	if (modelMap.find("sun") == modelMap.end())
+	if (modelMap.find("chest") == modelMap.end())
 	{
-		modelMap.emplace("sun", Model("./models/chest/treasure_chest.obj"));
+		modelMap.emplace("chest", Model("./models/chest/treasure_chest.obj"));
 	}
 	glm::mat4 model;
-	model = glm::translate(model, glm::vec3(0.0f, -1.00f, 0.0f));
+	model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
 	model = glm::scale(model, glm::vec3(1.0f));
 	shader.use();
 	for (int i = 0; i < instanceCount; i++)
 	{
 		shader.setMat4("model", models[i] * model);
-		modelMap.at("sun").draw(shader);	// draw scene as normal
+		modelMap.at("chest").draw(shader);	// draw scene as normal
 	}
 }
 
@@ -327,6 +331,38 @@ void renderWool(const Shader shader, const unsigned int VAO, const int instanceC
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	renderBasicBlock(shader, VAO, instanceCount, "wool", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+void renderBlackWool(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "blackWool", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+void renderWhiteWool(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "whiteWool", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+void renderYellowWool(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "yellowWool", durability);
+	glDisable(GL_CULL_FACE);
+}
+
+void renderRedWool(const Shader shader, const unsigned int VAO, const int instanceCount, const int durability)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	renderBasicBlock(shader, VAO, instanceCount, "redWool", durability);
 	glDisable(GL_CULL_FACE);
 }
 

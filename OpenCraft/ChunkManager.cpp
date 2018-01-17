@@ -4,9 +4,9 @@
 #include <limits>
 #include <stack>
 #include <mutex>
-#include "ext/glm/gtc/noise.hpp"
+#include <ext/glm/gtc/noise.hpp>
 #include "ChunkManager.h"
-
+#include "stb_image.h"
 
 
 ChunkManager::ChunkManager(const glm::vec3 cameraPos)
@@ -21,6 +21,41 @@ ChunkManager::ChunkManager(const glm::vec3 cameraPos)
 		for (int dq = -8; dq < 8; dq++) // for each chunk
 		{
 			m_chunkMap[m_p + dp][m_q + dq] = loadBasicChunk(m_p + dp, m_q + dq);
+		}
+	}
+	m_data = stbi_load("textures/show.png", &m_width, &m_height, &m_nrComponents, 0);
+	for (int x = 0; x < 16; x++)
+	{
+		for (int z = 0; z < 16; z++)
+		{
+			int r = static_cast<int>(m_data[m_nrComponents * 16 * x + m_nrComponents*z + 0]);
+			int g = static_cast<int>(m_data[m_nrComponents * 16 * x + m_nrComponents*z + 1]);
+			int b = static_cast<int>(m_data[m_nrComponents * 16 * x + m_nrComponents*z + 2]);
+
+			if (r > 250 && g > 250 && b >250)
+			{
+				m_chunkMap[0][0]->cubes[x * 256 * 16 + z * 256 + 20] = {x,20,z,19,0,0};
+			}
+			else if (r > 250 && g < 10 && b<10)
+			{
+				m_chunkMap[0][0]->cubes[x * 256 * 16 + z * 256 + 20] = { x,20,z,21,0,0 };
+			}
+			else if (r > 250 && g > 250 && b < 10)
+			{
+				m_chunkMap[0][0]->cubes[x * 256 * 16 + z * 256 + 20] = { x,20,z,20,0,0 };
+			}
+			else if (r < 10 && g < 10 && b < 10)
+			{
+				m_chunkMap[0][0]->cubes[x * 256 * 16 + z * 256 + 20] = { x,20,z,18,0,0 };
+			}
+			else if (r < 10 && g < 10 && b > 250)
+			{
+				m_chunkMap[0][0]->cubes[x * 256 * 16 + z * 256 + 20] = { x,20,z,15,0,0 };
+			}
+			else
+			{
+				m_chunkMap[0][0]->cubes[x * 256 * 16 + z * 256 + 20] = { x,20,z,1,0,0 };
+			}
 		}
 	}
 }
@@ -86,6 +121,40 @@ const std::list<RanderUnit>& ChunkManager::getRenderUnit(int *updated, const glm
 		blockSet.insert({ block.p,block.q,block.x,block.y,block.z,block.type,block.durability });
 	}
 	std::cerr << counter << " :duplicated" << std::endl;*/
+	for (int x = 0; x < 16; x++)
+	{
+		for (int z = 0; z < 16; z++)
+		{
+			int r = static_cast<int>(m_data[m_nrComponents * 16 * x + m_nrComponents*z + 0]);
+			int g = static_cast<int>(m_data[m_nrComponents * 16 * x + m_nrComponents*z + 1]);
+			int b = static_cast<int>(m_data[m_nrComponents * 16 * x + m_nrComponents*z + 2]);
+			if (r > 250 && g > 250 && b >250)
+			{
+				m_blocks.push_back({ 0,0,x,20,z,19,0 }); // white 
+			}
+			else if (r > 250 && g < 10 && b<10)
+			{
+				m_blocks.push_back({ 0,0,x,20,z,21,0 }); // red 
+			}
+			else if (r > 250 && g > 250 && b < 10)
+			{
+				m_blocks.push_back({ 0,0,x,20,z,20,0 }); // yellow 
+			}
+			else if (r < 10 && g < 10 && b < 10)
+			{
+
+				m_blocks.push_back({ 0,0,x,20,z,18,0 }); // black 
+			}
+			else if (r < 10 && g < 10 && b > 250)
+			{
+				m_blocks.push_back({ 0,0,x,20,z,15,0 }); // blue 
+			}
+			else
+			{
+				m_blocks.push_back({ 0,0,x,20,z,1,0 }); // dirt
+			}
+		}
+	}
 	std::cerr << m_blocks.size() << " blocks rendered" << std::endl;
 	return m_blocks;
 }

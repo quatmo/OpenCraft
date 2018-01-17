@@ -56,6 +56,7 @@ void OpenCraft::start(void)
 	initItems();
 	initModels();
 	initText();
+	initParticles();
 	startRenderLoop();
 }
 
@@ -112,6 +113,7 @@ void OpenCraft::initShaders(void)
 	m_shaderMap.emplace("model", Shader("./shaders/model.vs", "./shaders/model.fs"));
 	m_shaderMap.emplace("debugDepth", Shader("./shaders/debugDepth.vs", "./shaders/debugDepth.fs"));
 	m_shaderMap.emplace("text", Shader("./shaders/text.vs", "./shaders/text.fs"));
+	m_shaderMap.emplace("rain", Shader("./shaders/rain.vs", "./shaders/rain.fs"));
 
 }
 
@@ -180,6 +182,24 @@ void OpenCraft::initText(void)
 	glBindVertexArray(0);
 }
 
+void OpenCraft::initParticles(void)
+{
+	for (int i = 0; i < MAX_PARTICALS - 3; i += 3)
+	{
+		particlesContainter[i] = ((rand() % 1000) / 50.0f) - 1;
+		particlesContainter[i + 1] = ((rand() % 1000) / 50.0f) - 1;
+		particlesContainter[i + 2] = rand() % 100;
+	}
+	glGenVertexArrays(1, &m_rainVAO);
+	glBindVertexArray(m_rainVAO);
+	glGenBuffers(1, &m_rainVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_rainVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(particlesContainter), particlesContainter, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+
+}
+
 void OpenCraft::startRenderLoop(void)
 {
 	while (!glfwWindowShouldClose(m_window))
@@ -202,12 +222,16 @@ void OpenCraft::startRenderLoop(void)
 		//renderSkyBox();
 		//renderModel();
 
+		
+
 		renderBlocks();
 		renderCrossair();
 		renderHand();
 		renderText();
-
-
+		if (m_renderRainFlag == true)
+		{
+			renderRain();
+		}
 		// final works
 		glfwSwapBuffers(m_window);
 		glfwPollEvents();
@@ -272,7 +296,7 @@ void OpenCraft::processInput(void)
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_PRESS)
 	{
-		if (m_blockOnHand > 1 && m_blockOnHand <= 17 && m_handMoveStage == 0)
+		if (m_blockOnHand > 1 && m_blockOnHand <= 21 && m_handMoveStage == 0)
 		{
 			m_handMoveStage = 16;
 			m_blockOnHand -= 1;
@@ -280,7 +304,7 @@ void OpenCraft::processInput(void)
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_PRESS)
 	{
-		if (m_blockOnHand >= 1 && m_blockOnHand < 17 && m_handMoveStage == 0)
+		if (m_blockOnHand >= 1 && m_blockOnHand < 21 && m_handMoveStage == 0)
 		{
 			m_handMoveStage = 16;
 			m_blockOnHand += 1;
@@ -349,6 +373,20 @@ void OpenCraft::processInput(void)
 	if (glfwGetKey(m_window, GLFW_KEY_F1) == GLFW_RELEASE)
 	{
 		F1_firstPressed = true;
+	}
+
+	static bool N_firstPressed = true;
+	if (glfwGetKey(m_window, GLFW_KEY_N) == GLFW_PRESS)
+	{
+		if (N_firstPressed == true)
+		{
+			N_firstPressed = false;
+			m_renderRainFlag = !m_renderRainFlag;
+		}
+	}
+	if (glfwGetKey(m_window, GLFW_KEY_N) == GLFW_RELEASE)
+	{
+		N_firstPressed = true;
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
 	{
@@ -916,6 +954,21 @@ void OpenCraft::renderTextHelper(Shader& shader, std::string text, GLfloat x, GL
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void OpenCraft::renderRain(void)
+{
+	glDisable(GL_DEPTH_TEST);
+	auto rainShader = m_shaderMap.at("rain");
+	rainShader.use();
+	rainShader.setVec3("color", 100 / 255.0f, 149 / 255.0f, 237 / 255.0f);
+	rainShader.setFloat("time", glfwGetTime()/1.5);
+	glPointSize(3.0f);
+	glBindVertexArray(m_rainVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_rainVBO);
+	glEnableVertexAttribArray(0);
+	glDrawArrays(GL_POINTS, 0, MAX_PARTICALS);
+	glEnable(GL_DEPTH_TEST);
+}
+
 void OpenCraft::framebuffer_size_callback(GLFWwindow * window, int width, int height)
 {
 	glViewport(0, 0, width, height);
@@ -954,6 +1007,7 @@ void OpenCraft::mouse_button_callback(GLFWwindow * window, int button, int actio
 		case GLFW_MOUSE_BUTTON_MIDDLE:
 			break;
 		case GLFW_MOUSE_BUTTON_RIGHT:
+			m_handMoveStage = 16;
 			m_chunkManager.tryPlaceCube(m_camera.getPosition(), m_camera.getFront(), m_blockOnHand);
 			break;
 		default:

@@ -24,8 +24,8 @@ constexpr float PITCH = 0.0f;
 constexpr float SPEED = 5.0f;
 constexpr float SENSITIVTY = 0.1f;
 constexpr float ZOOM = 45.0f;
-constexpr float ACCERATION = 0.1f;
-constexpr float JUMP_INIT_SPEED = -0.03125f;
+constexpr float ACCERATION = 0.2f;
+constexpr float JUMP_INIT_SPEED = -0.06125f;
 
 class Camera
 {

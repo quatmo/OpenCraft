@@ -25,7 +25,7 @@ constexpr unsigned int DEFAULT_SCR_WIDTH = 800;
 constexpr unsigned int DEFAULT_SCR_HEIGHT = 600;
 constexpr unsigned int SHADOW_MAP_WIDTH = 1024;
 constexpr unsigned int SHADOW_MAP_HEIGHT = 1024;
-
+constexpr unsigned int MAX_PARTICALS = 1000;
 struct Character {
 	GLuint TextureID;  
 	glm::ivec2 Size;   
@@ -55,6 +55,9 @@ private:
 	std::unordered_map<GLchar, Character> m_characters;
 	GLuint m_characterVAO;
 	GLuint m_characterVBO;
+	GLuint m_rainVAO;
+	GLuint m_rainVBO;
+	bool m_renderRainFlag = false;
 
 	//C-style ptr
 	GLFWwindow* m_window = NULL;
@@ -67,6 +70,7 @@ private:
 	float m_lastFrame = 0.0f;
 	float m_FPS;
 
+	GLfloat particlesContainter[MAX_PARTICALS];
 
 	// last position for mouse cursor
 	static float m_lastX;
@@ -94,6 +98,7 @@ private:
 	void initItems(void);
 	void initModels(void);
 	void initText(void);
+	void initParticles(void);
 
 	// render loop
 	void startRenderLoop(void);
@@ -112,6 +117,7 @@ private:
 	void renderTestModel(void);
 	void renderText(void);
 	void renderTextHelper(Shader &shader, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color);
+	void renderRain(void);
 
 	//call back functions
 	static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
