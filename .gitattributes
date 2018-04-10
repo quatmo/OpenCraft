@@ -1,10 +1,10 @@
-OpenCraft/ext/*
-OpenCraft/fonts/*
-OpenCraft/freetype/*
-OpenCraft/lib/*
-OpenCraft/models/*
-OpenCraft/shaders/*
-OpenCraft/textures/*
+OpenCraft/ext/* linguist-vendored 
+OpenCraft/fonts/* linguist-vendored 
+OpenCraft/freetype/* linguist-vendored 
+OpenCraft/lib/* linguist-vendored 
+OpenCraft/models/* linguist-vendored 
+OpenCraft/shaders/* linguist-vendored 
+OpenCraft/textures/* linguist-vendored 
 
 
 ###############################################################################
