@@ -1,3 +1,12 @@
+OpenCraft/ext/*
+OpenCraft/fonts/*
+OpenCraft/freetype/*
+OpenCraft/lib/*
+OpenCraft/models/*
+OpenCraft/shaders/*
+OpenCraft/textures/*
+
+
 ###############################################################################
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
